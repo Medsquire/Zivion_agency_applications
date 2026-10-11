@@ -1,0 +1,342 @@
+/* ===================================================================
+   BEE PROPERTY — AGENCY PORTAL SIGN IN
+   Clean White Floating Card over Panoramic Twilight Community
+   =================================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+.login-screen-wrapper {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  overflow-y: auto;
+  overflow-x: hidden;
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Full-Screen Panoramic Gated Residential Community Background */
+.login-panoramic-bg {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Subtle Dark Vignette Overlay preserving the architectural beauty */
+.dark-overlay {
+  position: absolute;
+  inset: 0;
+  background: 
+    linear-gradient(180deg, rgba(15, 23, 42, 0.42) 0%, rgba(15, 23, 42, 0.18) 40%, rgba(15, 23, 42, 0.6) 100%),
+    radial-gradient(ellipse at 80% 50%, rgba(15, 23, 42, 0.25) 0%, rgba(15, 23, 42, 0.65) 100%);
+}
+
+/* Main Layout Wrapper: Right-anchored desktop layout */
+.login-content-container {
+  position: relative;
+  z-index: 10;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 40px 6vw;
+  box-sizing: border-box;
+}
+
+/* Elevated Clean White Login Card */
+.white-login-card {
+  width: 100%;
+  max-width: 440px;
+  background: #FFFFFF;
+  border-radius: 24px;
+  padding: 44px 36px 42px;
+  box-shadow: 
+    0 24px 60px -8px rgba(0, 0, 0, 0.45),
+    0 6px 20px rgba(0, 0, 0, 0.18);
+  animation: cardFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Card Header Section */
+.card-header-section {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.portal-main-heading {
+  font-size: 25px;
+  color: #0F172A;
+  margin: 0 0 6px 0;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.portal-main-heading strong {
+  font-weight: 800;
+  color: #0B1220;
+}
+
+.portal-subheading {
+  font-size: 13px;
+  color: #64748B;
+  margin: 0;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+/* Form Structure */
+.agency-signin-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-field-group {
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.field-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #1E293B;
+  margin-bottom: 8px;
+  letter-spacing: 0.01em;
+}
+
+/* Input Containers */
+.custom-input-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  height: 50px;
+  padding: 0 16px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.custom-input-box:hover {
+  border-color: #CBD5E1;
+}
+
+.custom-input-box.is-focused {
+  background: #FFFFFF;
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.field-icon-left {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94A3B8;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.native-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 14.5px;
+  color: #0F172A;
+  font-family: inherit;
+  font-weight: 500;
+  width: 100%;
+}
+
+.native-input::placeholder {
+  color: #94A3B8;
+  font-weight: 400;
+}
+
+/* Password Eye Toggle */
+.password-eye-toggle {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #94A3B8;
+  padding: 6px;
+  margin-right: -4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: color 0.2s ease;
+}
+
+.password-eye-toggle:hover {
+  color: #2563EB;
+}
+
+/* Checkbox Row: Keep Session Active */
+.checkbox-row {
+  margin-top: 2px;
+  margin-bottom: 22px;
+}
+
+.checkbox-container {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  gap: 10px;
+}
+
+.checkbox-container input[type="checkbox"] {
+  display: none;
+}
+
+.custom-checkmark {
+  width: 17px;
+  height: 17px;
+  border-radius: 4px;
+  background: #2563EB;
+  border: 1px solid #2563EB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.checkbox-container input[type="checkbox"]:not(:checked) + .custom-checkmark {
+  background: #FFFFFF;
+  border-color: #CBD5E1;
+}
+
+.checkbox-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  letter-spacing: -0.01em;
+}
+
+/* Primary Sign In Button */
+.primary-signin-button {
+  height: 48px;
+  width: 100%;
+  background: #2563EB;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.32);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.primary-signin-button:hover:not(:disabled) {
+  background: #1D4ED8;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.42);
+}
+
+.primary-signin-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.primary-signin-button:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.btn-arrow {
+  font-size: 16px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.primary-signin-button:hover:not(:disabled) .btn-arrow {
+  transform: translateX(3px);
+}
+
+/* Status Notifications */
+.card-feedback {
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: cardFadeIn 0.3s ease;
+}
+
+.card-feedback.error {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #DC2626;
+}
+
+.card-feedback.success {
+  background: #F0FDF4;
+  border: 1px solid #BBF7D0;
+  color: #16A34A;
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ===================================================================
+   RESPONSIVENESS (Tablets & Mobile Viewports)
+   =================================================================== */
+
+@media (max-width: 1024px) {
+  .login-content-container {
+    justify-content: center;
+    padding: 60px 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .login-content-container {
+    padding: 40px 16px;
+    align-items: center;
+  }
+
+  .white-login-card {
+    padding: 38px 24px 38px;
+    border-radius: 22px;
+  }
+
+  .portal-main-heading {
+    font-size: 23px;
+  }
+
+  .portal-subheading {
+    font-size: 12.5px;
+    margin-bottom: 26px;
+  }
+}
