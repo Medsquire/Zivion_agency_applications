@@ -22,48 +22,68 @@ function Reports({ requests, technicians, payments }) {
         (payment) => payment.status === 'Pending'
     ).length;
 
-    const reports = [
+    const reportCards = [
         {
-            title: 'Service Request Report',
-            description: 'Overview of all service requests and their status.',
+            title: 'Service Requests',
             value: requests.length,
-            detail: `${completed} completed`,
-            icon: '▦',
+            icon: (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <path d="M3 9h18" />
+                    <path d="M9 21V9" />
+                </svg>
+            ),
         },
         {
-            title: 'Pending Work Report',
-            description: 'Requests waiting for action.',
+            title: 'Pending Work',
             value: pending,
-            detail: 'Pending requests',
-            icon: '◷',
+            icon: (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                </svg>
+            ),
         },
         {
-            title: 'Ongoing Work Report',
-            description: 'Requests currently being handled.',
+            title: 'Work In Progress',
             value: ongoing,
-            detail: 'In-progress requests',
-            icon: '↻',
+            icon: (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+                </svg>
+            ),
         },
         {
-            title: 'Completion Report',
-            description: 'Successfully completed service requests.',
+            title: 'Completed Work',
             value: completed,
-            detail: 'Completed requests',
-            icon: '✓',
+            icon: (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                </svg>
+            ),
         },
         {
-            title: 'Technician Report',
-            description: 'Registered technician directory.',
+            title: 'Active Specialists',
             value: technicians.length,
-            detail: 'Registered technicians',
-            icon: '♙',
+            icon: (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+            ),
         },
         {
-            title: 'Payment Report',
-            description: 'Payment record and collection overview.',
+            title: 'Payment Records',
             value: payments.length,
-            detail: `${paid} paid · ${pendingPayments} pending`,
-            icon: '₹',
+            icon: (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="5" width="20" height="14" rx="2" />
+                    <line x1="2" y1="10" x2="22" y2="10" />
+                </svg>
+            ),
         },
     ];
 
@@ -116,62 +136,75 @@ function Reports({ requests, technicians, payments }) {
 
     return (
         <div className="page-content">
-            <div className="breadcrumb">
-                BEE Property Management / Reports
-            </div>
-
             <div className="page-heading">
                 <div>
                     <h1>Reports</h1>
-                    <p>Review agency operations and service performance.</p>
                 </div>
 
-                <button
-                    type="button"
-                    className="primary-button"
-                    onClick={exportReport}
-                >
-                    Export Service CSV
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                        type="button"
+                        className="primary-button"
+                        onClick={exportReport}
+                    >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        <span>Export CSV</span>
+                    </button>
+                </div>
             </div>
 
-            <div className="report-grid">
-                {reports.map((report) => (
-                    <article className="report-card" key={report.title}>
-                        <div className="report-card-top">
-                            <span className="report-icon">{report.icon}</span>
-                            <span className="report-tag">Summary</span>
+            <div className="overview-grid">
+                {reportCards.map((card) => (
+                    <div className="overview-card" key={card.title}>
+                        <div className="overview-card-top">
+                            <span className="overview-card-name">{card.title}</span>
+                            <div className="overview-icon" aria-hidden="true">
+                                {card.icon}
+                            </div>
                         </div>
-
-                        <h2>{report.title}</h2>
-                        <p>{report.description}</p>
-
-                        <div className="report-value">{report.value}</div>
-                        <span className="report-detail">{report.detail}</span>
-                    </article>
+                        <div className="overview-card-bottom">
+                            <h2 className="overview-card-count">{card.value}</h2>
+                            <span className="overview-card-link">Analytics</span>
+                        </div>
+                    </div>
                 ))}
             </div>
 
             <section className="content-card">
-                <h2>Agency Performance Summary</h2>
-                <p>
-                    Total service requests: <strong>{requests.length}</strong>
-                </p>
-                <p>
-                    Work completed: <strong>{completed}</strong>
-                </p>
-                <p>
-                    Work in progress: <strong>{ongoing}</strong>
-                </p>
-                <p>
-                    Awaiting action: <strong>{pending}</strong>
-                </p>
-                <p>
-                    Total technicians: <strong>{technicians.length}</strong>
-                </p>
-                <p>
-                    Total payment records: <strong>{payments.length}</strong>
-                </p>
+                <div className="section-heading">
+                    <h2>Performance Metrics</h2>
+                </div>
+
+                <div className="modern-kpi-grid">
+                    <div className="modern-kpi-box">
+                        <span className="modern-kpi-label">Total Requests</span>
+                        <h3 className="modern-kpi-val">{requests.length}</h3>
+                    </div>
+                    <div className="modern-kpi-box">
+                        <span className="modern-kpi-label">Completed</span>
+                        <h3 className="modern-kpi-val">{completed}</h3>
+                    </div>
+                    <div className="modern-kpi-box">
+                        <span className="modern-kpi-label">In Progress</span>
+                        <h3 className="modern-kpi-val">{ongoing}</h3>
+                    </div>
+                    <div className="modern-kpi-box">
+                        <span className="modern-kpi-label">Pending</span>
+                        <h3 className="modern-kpi-val">{pending}</h3>
+                    </div>
+                    <div className="modern-kpi-box">
+                        <span className="modern-kpi-label">Paid Transactions</span>
+                        <h3 className="modern-kpi-val">{paid}</h3>
+                    </div>
+                    <div className="modern-kpi-box">
+                        <span className="modern-kpi-label">Pending Payments</span>
+                        <h3 className="modern-kpi-val">{pendingPayments}</h3>
+                    </div>
+                </div>
             </section>
         </div>
     );

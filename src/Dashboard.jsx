@@ -2,8 +2,10 @@
 import React, { useState } from 'react';
 import './Dashboard.css';
 
+
 import Sidebar from './components/Sidebar';
 import DashboardHome from './pages/DashboardHome';
+import Properties, { apartmentNames } from './pages/Properties';
 import Services from './pages/Services';
 import Technicians from './pages/Technicians';
 import Payments from './pages/Payments';
@@ -11,6 +13,7 @@ import Reports from './pages/Reports';
 
 function Dashboard({ onLogout }) {
     const [activePage, setActivePage] = useState('Dashboard');
+    const [agencyAssignments, setAgencyAssignments] = useState({});
 
     const [adminProfile, setAdminProfile] = useState({
         fullName: 'Agency Administrator',
@@ -188,8 +191,17 @@ function Dashboard({ onLogout }) {
                     />
                 );
 
+            case 'Properties':
+                return (
+                    <Properties
+                        agencyAssignments={agencyAssignments}
+                        onAgencyAssignmentsChange={setAgencyAssignments}
+                    />
+                );
+
             case 'Technicians':
                 return <Technicians technicians={technicians} />;
+
 
             case 'Payment Records':
                 return <Payments payments={payments} />;
@@ -210,6 +222,8 @@ function Dashboard({ onLogout }) {
                         requests={requests}
                         technicians={technicians}
                         payments={payments}
+                        apartments={apartmentNames}
+                        agencyAssignments={agencyAssignments}
                         onNavigate={navigate}
                     />
                 );
@@ -222,6 +236,7 @@ function Dashboard({ onLogout }) {
                 activePage={activePage}
                 onNavigate={navigate}
             />
+
 
             <main className="main-area">
                 <header className="topbar">
@@ -285,7 +300,6 @@ function Dashboard({ onLogout }) {
                         <div className="request-modal-header">
                             <div>
                                 <h2 id="profile-modal-title">Edit Administrator Profile</h2>
-                                <p>Agency Administrator details for BEE Property Management</p>
                             </div>
                             <button
                                 type="button"
@@ -293,7 +307,10 @@ function Dashboard({ onLogout }) {
                                 aria-label="Close profile modal"
                                 onClick={() => setIsEditModalOpen(false)}
                             >
-                                ×
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
                             </button>
                         </div>
 
@@ -416,6 +433,7 @@ function Dashboard({ onLogout }) {
                     </section>
                 </div>
             )}
+
         </div>
     );
 }

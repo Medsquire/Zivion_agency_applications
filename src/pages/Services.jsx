@@ -34,21 +34,35 @@ function Services({ requests = [] }) {
       name: 'Pending',
       label: 'Pending Requests',
       count: pendingCount,
-      icon: '◷',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+      ),
       color: 'orange',
     },
     {
       name: 'In Progress',
       label: 'Ongoing Requests',
       count: ongoingCount,
-      icon: '↻',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+        </svg>
+      ),
       color: 'blue',
     },
     {
       name: 'Completed',
       label: 'Completed Requests',
       count: completedCount,
-      icon: '✓',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+      ),
       color: 'green',
     },
   ];
@@ -105,16 +119,12 @@ function Services({ requests = [] }) {
 
   return (
     <div className="page-content">
-      <div className="breadcrumb">
-        BEE Property Management / Services
-      </div>
+      
 
       <div className="page-heading">
         <div>
           <h1>Services</h1>
-          <p>
-            Manage maintenance requests and service categories.
-          </p>
+       
         </div>
       </div>
 
@@ -139,7 +149,6 @@ function Services({ requests = [] }) {
 
             <p>{card.label}</p>
             <h2>{card.count}</h2>
-            <span>View requests →</span>
           </button>
         ))}
       </div>
@@ -149,7 +158,6 @@ function Services({ requests = [] }) {
         <div className="section-heading">
           <div>
             <h2>Service Requests</h2>
-            <p>View maintenance requests and their details.</p>
           </div>
 
           <button

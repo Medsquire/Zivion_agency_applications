@@ -4,17 +4,17 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: #f4f7fb;
+  background-color: #F0F6FF;
   font-family: Arial, sans-serif;
   text-align: center;
 }
 
 .App h1 {
-  color: #174ea6;
+  color: #1D4ED8;
   font-size: 36px;
 }
 
 .App p {
-  color: #555;
+  color: #2563EB;
   font-size: 18px;
 }

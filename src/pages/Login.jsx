@@ -56,7 +56,7 @@ function Login({ onLogin }) {
               <strong>AGENCY</strong> PORTAL
             </h1>
             <p className="portal-subheading">
-              BEE PROPERTY MNAGEMENTS 
+              BEE PROPERTY MANAGEMENT
             </p>
           </div>
 
