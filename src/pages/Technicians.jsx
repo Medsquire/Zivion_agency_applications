@@ -1,5 +1,6 @@
 
 import React from 'react';
+import TableScrollSlider from '../components/TableScrollSlider';
 
 function Technicians({ technicians }) {
     const available = technicians.filter((item) => item.status === 'Available').length;
@@ -80,7 +81,7 @@ function Technicians({ technicians }) {
                     </div>
                 </div>
 
-                <div className="table-wrapper">
+                <TableScrollSlider>
                     <table className="data-table">
                         <thead>
                             <tr>
@@ -130,7 +131,7 @@ function Technicians({ technicians }) {
                             ))}
                         </tbody>
                     </table>
-                </div>
+                </TableScrollSlider>
             </section>
         </div>
     );

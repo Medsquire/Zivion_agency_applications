@@ -1,5 +1,6 @@
 
 import React from 'react';
+import TableScrollSlider from '../components/TableScrollSlider';
 
 function Payments({ payments }) {
   const totalAmount = payments.reduce(
@@ -91,7 +92,7 @@ function Payments({ payments }) {
           </span>
         </div>
 
-        <div className="table-wrapper">
+        <TableScrollSlider>
           <table className="data-table">
             <thead>
               <tr>
@@ -121,7 +122,7 @@ function Payments({ payments }) {
                     <span className="spec-badge">{payment.service}</span>
                   </td>
                   <td>
-                    <strong style={{ color: '#0A1E4A', fontSize: '13.5px' }}>
+                    <strong className="payment-amount-cell">
                       ₹{Number(payment.amount).toLocaleString('en-IN')}
                     </strong>
                   </td>
@@ -147,7 +148,7 @@ function Payments({ payments }) {
               )}
             </tbody>
           </table>
-        </div>
+        </TableScrollSlider>
       </section>
     </div>
   );

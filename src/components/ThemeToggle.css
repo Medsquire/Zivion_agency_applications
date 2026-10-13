@@ -1,0 +1,83 @@
+/* ===================================================================
+   THEME TOGGLE BUTTON
+   Modern glass icon button placed next to admin profile chip
+   =================================================================== */
+
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(6, 17, 43, 0.18);
+  flex-shrink: 0;
+}
+
+.theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(147, 197, 253, 0.5);
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 4px 14px rgba(6, 17, 43, 0.3);
+}
+
+.theme-toggle-btn:active {
+  transform: translateY(0) scale(0.96);
+}
+
+.theme-toggle-btn:focus-visible {
+  outline: 2px solid #93C5FD;
+  outline-offset: 2px;
+}
+
+/* Light Mode (shows golden moon icon) */
+.theme-toggle-btn.is-light {
+  color: #FDE047;
+}
+
+.theme-toggle-btn.is-light:hover {
+  color: #FEF08A;
+}
+
+/* Dark Mode (shows sun icon) */
+.theme-toggle-btn.is-dark {
+  background: rgba(37, 99, 235, 0.28);
+  border-color: rgba(147, 197, 253, 0.4);
+  color: #FBBF24;
+}
+
+.theme-toggle-btn.is-dark:hover {
+  background: rgba(37, 99, 235, 0.42);
+  border-color: rgba(147, 197, 253, 0.65);
+  color: #FDE047;
+}
+
+.theme-toggle-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.theme-toggle-btn:hover .theme-toggle-icon-wrap {
+  transform: rotate(15deg);
+}
+
+.theme-icon {
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .theme-toggle-btn {
+    width: 35px;
+    height: 35px;
+  }
+}

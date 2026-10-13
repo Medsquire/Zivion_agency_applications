@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import TableScrollSlider from '../components/TableScrollSlider';
 
 const categories = [
   'All Services',
@@ -198,7 +199,7 @@ function Services({ requests = [] }) {
             ` · ${selectedCategory}`}
         </div>
 
-        <div className="table-wrapper">
+        <TableScrollSlider>
           <table className="data-table request-table">
             <thead>
               <tr>
@@ -250,7 +251,7 @@ function Services({ requests = [] }) {
               )}
             </tbody>
           </table>
-        </div>
+        </TableScrollSlider>
       </section>
 
       {/* Selected request details modal */}

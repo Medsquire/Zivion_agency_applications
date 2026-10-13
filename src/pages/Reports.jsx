@@ -168,7 +168,7 @@ function Reports({ requests, technicians, payments }) {
                         </div>
                         <div className="overview-card-bottom">
                             <h2 className="overview-card-count">{card.value}</h2>
-                            <span className="overview-card-link">Analytics</span>
+                            <span className="overview-card-link"></span>
                         </div>
                     </div>
                 ))}

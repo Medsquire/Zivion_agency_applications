@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import './Dashboard.css';
 
-
 import Sidebar from './components/Sidebar';
 import DashboardHome from './pages/DashboardHome';
 import Properties, { apartmentNames } from './pages/Properties';
@@ -10,27 +9,25 @@ import Services from './pages/Services';
 import Technicians from './pages/Technicians';
 import Payments from './pages/Payments';
 import Reports from './pages/Reports';
+import ProfileAvatar from './components/ProfileAvatar';
+import ThemeToggle from './components/ThemeToggle';
+import { UserProvider, useUser } from './context/UserContext';
+import { ThemeProvider } from './context/ThemeContext';
 
-function Dashboard({ onLogout }) {
+function DashboardContent({ onLogout }) {
+    const { user, updateUser, uploadPhoto } = useUser();
     const [activePage, setActivePage] = useState('Dashboard');
     const [agencyAssignments, setAgencyAssignments] = useState({});
-
-    const [adminProfile, setAdminProfile] = useState({
-        fullName: 'Agency Administrator',
-        email: 'admin@beeportal.com',
-        phone: '+91 98765 43210',
-        role: 'Agency Administrator',
-        subtitle: 'Administrator',
-        agencyName: 'BEE Property Management',
-    });
+    const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [profileFormData, setProfileFormData] = useState({
-        fullName: 'Agency Administrator',
-        email: 'admin@beeportal.com',
-        phone: '+91 98765 43210',
-        role: 'Agency Administrator',
-        agencyName: 'BEE Property Management',
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        agencyName: user.agencyName,
+        photoUrl: user.photoUrl || '',
     });
 
     const [requests, setRequests] = useState([
@@ -38,7 +35,7 @@ function Dashboard({ onLogout }) {
             id: 'REQ-1001',
             service: 'Electrical Repair',
             resident: 'Ravi Kumar',
-            apartment: 'Green Valley Apartments',
+            apartment: 'Surya Enclave',
             flatNo: 'A-101',
             technician: 'Suresh Babu',
             technicianId: 'TECH-001',
@@ -49,7 +46,7 @@ function Dashboard({ onLogout }) {
             id: 'REQ-1002',
             service: 'Plumbing',
             resident: 'Priya Sharma',
-            apartment: 'Lake View Towers',
+            apartment: 'Golden Orbit',
             flatNo: 'C-305',
             technician: 'Mahesh Reddy',
             technicianId: 'TECH-002',
@@ -60,7 +57,7 @@ function Dashboard({ onLogout }) {
             id: 'REQ-1003',
             service: 'AC Maintenance',
             resident: 'Arjun Reddy',
-            apartment: 'Green Valley Apartments',
+            apartment: 'Sunrise Heights',
             flatNo: 'B-202',
             technician: 'Suresh Babu',
             technicianId: 'TECH-001',
@@ -71,7 +68,7 @@ function Dashboard({ onLogout }) {
             id: 'REQ-1004',
             service: 'Civil Maintenance',
             resident: 'Sneha Rao',
-            apartment: 'Sunshine Residency',
+            apartment: 'SKYLINE HOMES',
             flatNo: 'A-204',
             technician: 'Kiran Rao',
             technicianId: 'TECH-003',
@@ -144,29 +141,31 @@ function Dashboard({ onLogout }) {
 
     const handleOpenEditModal = () => {
         setProfileFormData({
-            fullName: adminProfile.fullName,
-            email: adminProfile.email,
-            phone: adminProfile.phone,
-            role: adminProfile.role,
-            agencyName: adminProfile.agencyName,
+            fullName: user.fullName,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+            agencyName: user.agencyName,
+            photoUrl: user.photoUrl || '',
         });
         setIsEditModalOpen(true);
     };
 
-    const handleSaveProfile = (event) => {
+    const handleSaveProfile = async (event) => {
         event.preventDefault();
-        setAdminProfile((prev) => ({
-            ...prev,
+        await updateUser({
             fullName: profileFormData.fullName,
             email: profileFormData.email,
             phone: profileFormData.phone,
             role: profileFormData.role,
             agencyName: profileFormData.agencyName,
-        }));
+            photoUrl: profileFormData.photoUrl,
+        });
         setIsEditModalOpen(false);
     };
 
     const navigate = (page) => {
+        setIsMobileNavOpen(false);
         if (page === 'Logout') {
             localStorage.removeItem('isLoggedIn');
             if (onLogout) {
@@ -235,48 +234,69 @@ function Dashboard({ onLogout }) {
             <Sidebar
                 activePage={activePage}
                 onNavigate={navigate}
+                isOpen={isMobileNavOpen}
+                onClose={() => setIsMobileNavOpen(false)}
             />
-
 
             <main className="main-area">
                 <header className="topbar">
-                    <div className="topbar-title">
-                        BEE Property Management
-                        <span>/</span>
-                        <strong>{activePage}</strong>
+                    <div className="topbar-left">
+                        <button
+                            type="button"
+                            className="mobile-nav-toggle-btn"
+                            onClick={() => setIsMobileNavOpen(true)}
+                            aria-label="Open navigation menu"
+                            aria-expanded={isMobileNavOpen}
+                        >
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <line x1="3" y1="12" x2="21" y2="12" />
+                                <line x1="3" y1="6" x2="21" y2="6" />
+                                <line x1="3" y1="18" x2="21" y2="18" />
+                            </svg>
+                        </button>
+
+                        <div className="topbar-title">
+                            <span className="topbar-brand-label">BEE Property Management</span>
+                            <span className="topbar-divider">/</span>
+                            <strong className="topbar-active-page">{activePage}</strong>
+                        </div>
                     </div>
 
                     <div className="admin-profile-wrapper">
-                        <div className="admin-profile">
-                            <div className="admin-avatar">A</div>
-                            <div className="admin-profile-info">
-                                <strong>{adminProfile.role}</strong>
-                                <span>{adminProfile.subtitle}</span>
-                            </div>
-                        </div>
-
+                        <ThemeToggle />
                         <button
                             type="button"
-                            id="edit-profile-btn"
-                            className="edit-profile-btn"
+                            className="admin-profile-chip"
                             onClick={handleOpenEditModal}
                             title="Edit Administrator Profile"
+                            aria-label="Edit Administrator Profile"
                         >
+                            <ProfileAvatar
+                                size="header"
+                                user={user}
+                                onSavePhoto={uploadPhoto}
+                            />
+                            <div className="admin-profile-info">
+                                <span className="admin-profile-name">{user.fullName}</span>
+                                <div className="admin-profile-sub">
+                                    <span className="admin-profile-email">{user.email}</span>
+                                    <span className="admin-role-badge">ADMIN</span>
+                                </div>
+                            </div>
                             <svg
+                                className="admin-profile-chevron"
                                 width="14"
                                 height="14"
                                 viewBox="0 0 24 24"
                                 fill="none"
                                 stroke="currentColor"
-                                strokeWidth="2"
+                                strokeWidth="2.5"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                                 aria-hidden="true"
                             >
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                <polyline points="6 9 12 15 18 9" />
                             </svg>
-                            <span>Edit Profile</span>
                         </button>
                     </div>
                 </header>
@@ -316,8 +336,21 @@ function Dashboard({ onLogout }) {
 
                         <form onSubmit={handleSaveProfile}>
                             <div className="profile-modal-body">
-                                <div className="profile-avatar-preview">
-                                    <div className="admin-avatar preview-avatar">A</div>
+                                <div className="profile-avatar-preview-card">
+                                    <ProfileAvatar
+                                        size="modal"
+                                        user={{
+                                            fullName: profileFormData.fullName,
+                                            photoUrl: profileFormData.photoUrl !== undefined ? profileFormData.photoUrl : user.photoUrl,
+                                        }}
+                                        onSavePhoto={async (newPhotoUrl) => {
+                                            setProfileFormData((prev) => ({
+                                                ...prev,
+                                                photoUrl: newPhotoUrl,
+                                            }));
+                                            await uploadPhoto(newPhotoUrl);
+                                        }}
+                                    />
                                     <div className="preview-details">
                                         <h4>{profileFormData.fullName}</h4>
                                         <p>{profileFormData.role} · {profileFormData.agencyName}</p>
@@ -435,6 +468,16 @@ function Dashboard({ onLogout }) {
             )}
 
         </div>
+    );
+}
+
+function Dashboard(props) {
+    return (
+        <ThemeProvider>
+            <UserProvider>
+                <DashboardContent {...props} />
+            </UserProvider>
+        </ThemeProvider>
     );
 }
 

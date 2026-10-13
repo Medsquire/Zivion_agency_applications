@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
+import TableScrollSlider from '../components/TableScrollSlider';
 
 function DashboardHome({
   requests = [],
@@ -35,16 +36,6 @@ function DashboardHome({
     [requests, selectedApartment]
   );
 
-  const apartmentTechnicianCount = useMemo(
-    () =>
-      new Set(
-        apartmentRequests
-          .map((request) => request.technicianId || request.technician)
-          .filter(Boolean)
-      ).size,
-    [apartmentRequests]
-  );
-
   const apartmentAgencyNames = useMemo(() => {
     if (selectedApartment !== 'All Apartments') {
       return agencyAssignments[selectedApartment] || [];
@@ -53,16 +44,19 @@ function DashboardHome({
     return Array.from(new Set(Object.values(agencyAssignments).flat()));
   }, [agencyAssignments, selectedApartment]);
 
-  const apartmentAgencyCount = useMemo(() => {
-    if (selectedApartment !== 'All Apartments') {
-      return (agencyAssignments[selectedApartment] || []).length;
-    }
-
-    return Object.values(agencyAssignments).reduce(
-      (total, assignedAgencies) => total + assignedAgencies.length,
-      0
+  const apartmentActiveTechnicianCount = useMemo(() => {
+    const assignedTechnicians = new Set(
+      apartmentRequests
+        .flatMap((request) => [request.technicianId, request.technician])
+        .filter(Boolean)
     );
-  }, [agencyAssignments, selectedApartment]);
+
+    return technicians.filter(
+      (technician) =>
+        ['Available', 'Assigned'].includes(technician.status) &&
+        (assignedTechnicians.has(technician.id) || assignedTechnicians.has(technician.name))
+    ).length;
+  }, [apartmentRequests, technicians]);
 
   const cards = [
     {
@@ -227,28 +221,49 @@ function DashboardHome({
         </div>
 
         <div className="apartment-metrics">
-          <article className="apartment-metric apartment-metric-agencies">
-            <span className="apartment-metric-label">Agencies</span>
-            <strong className="apartment-metric-value">6</strong>
+          <article className="apartment-metric apartment-metric-technicians">
+            <span className="apartment-metric-label">Active Technicians</span>
+            <strong className="apartment-metric-value">{apartmentActiveTechnicianCount}</strong>
             <span className="apartment-metric-note">
-              {selectedApartment === 'All Apartments'
-                ? 'Total agency assignments across all apartments'
-                : apartmentAgencyNames.length
-                  ? apartmentAgencyNames.join(', ')
-                  : 'Assign agencies in Properties'}
+              Available or assigned to service requests
+            </span>
+          </article>
+          <article className="apartment-metric apartment-metric-inactive">
+            <span className="apartment-metric-label">Inactive Technicians</span>
+            <strong className="apartment-metric-value">0</strong>
+            <span className="apartment-metric-note">
+              No inactive status is currently tracked
             </span>
           </article>
           <article className="apartment-metric apartment-metric-requests">
-            <span className="apartment-metric-label">Service Requests</span>
-            <strong className="apartment-metric-value">{apartmentRequests.length}</strong>
-            <span className="apartment-metric-note">
-              {selectedApartment === 'All Apartments' ? 'Across all apartments' : selectedApartment}
-            </span>
+            <span className="apartment-metric-label">Pending Requests</span>
+            <strong className="apartment-metric-value">
+              {apartmentRequests.filter((request) => request.status === 'Pending').length}
+            </strong>
+            <span className="apartment-metric-note">Awaiting service</span>
           </article>
-          <article className="apartment-metric apartment-metric-technicians">
-            <span className="apartment-metric-label">Assigned Technicians</span>
-            <strong className="apartment-metric-value">{apartmentTechnicianCount}</strong>
-            <span className="apartment-metric-note">Technicians with assigned requests</span>
+          <article className="apartment-metric apartment-metric-progress">
+            <span className="apartment-metric-label">In Progress Requests</span>
+            <strong className="apartment-metric-value">
+              {apartmentRequests.filter((request) => request.status === 'In Progress').length}
+            </strong>
+            <span className="apartment-metric-note">Currently being handled</span>
+          </article>
+          <article className="apartment-metric apartment-metric-departments">
+            <span className="apartment-metric-label">No. of Departments</span>
+            <strong className="apartment-metric-value">7</strong>
+            <span className="apartment-metric-note">Departments per property</span>
+          </article>
+          <article className="apartment-metric apartment-metric-agencies">
+            <span className="apartment-metric-label">Agencies</span>
+            <strong className="apartment-metric-value apartment-metric-value-list">
+              {apartmentAgencyNames.length
+                ? apartmentAgencyNames.join(', ')
+                : 'No agencies assigned'}
+            </strong>
+            <span className="apartment-metric-note">
+              {selectedApartment === 'All Apartments' ? 'Across all properties' : selectedApartment}
+            </span>
           </article>
         </div>
       </section>
@@ -266,16 +281,7 @@ function DashboardHome({
               placeholder="Search recent tickets..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                padding: '8px 12px',
-                border: '1px solid #CCE1FD',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontFamily: 'inherit',
-                width: '180px',
-                color: '#0A1E4A',
-                background: '#FFFFFF',
-              }}
+              className="table-search-input"
             />
             <button
               type="button"
@@ -287,7 +293,7 @@ function DashboardHome({
           </div>
         </div>
 
-        <div className="table-wrapper">
+        <TableScrollSlider>
           <table className="data-table">
             <thead>
               <tr>
@@ -315,39 +321,27 @@ function DashboardHome({
                       <span className="request-id-badge">{request.id}</span>
                     </td>
                     <td>
-                      <strong style={{ color: '#0A1E4A' }}>{request.service}</strong>
+                      <strong className="table-row-title">{request.service}</strong>
                     </td>
                     <td>
                       <div className="resident-avatar-cell">
                         <div className="resident-avatar-circle">
                           {getInitials(request.resident)}
                         </div>
-                        <span style={{ color: '#0A1E4A' }}>{request.resident}</span>
+                        <span className="table-row-text">{request.resident}</span>
                       </div>
                     </td>
                     <td>
                       <div>
-                        <span style={{ color: '#0A1E4A' }}>{request.apartment}</span>
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            marginLeft: '6px',
-                            padding: '2px 6px',
-                            background: '#EBF3FE',
-                            border: '1px solid #BFDBFE',
-                            borderRadius: '4px',
-                            fontSize: '11px',
-                            fontWeight: 600,
-                            color: '#1D4ED8',
-                          }}
-                        >
+                        <span className="table-row-text">{request.apartment}</span>
+                        <span className="table-flat-chip">
                           {request.flatNo}
                         </span>
                       </div>
                     </td>
                     <td>
                       {request.technician ? (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', color: '#0A1E4A' }}>
+                        <span className="table-specialist-item">
                           <span style={{ color: '#16A34A' }}>●</span>
                           {request.technician}
                         </span>
@@ -384,7 +378,7 @@ function DashboardHome({
               )}
             </tbody>
           </table>
-        </div>
+        </TableScrollSlider>
       </section>
     </div>
   );

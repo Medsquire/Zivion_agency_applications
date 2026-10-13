@@ -18,3 +18,8 @@
   color: #2563EB;
   font-size: 18px;
 }
+
+[data-theme="dark"] .App {
+  background-color: #050E22;
+  color: #F1F5F9;
+}

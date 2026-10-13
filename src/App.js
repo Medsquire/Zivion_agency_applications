@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Login from './pages/Login';
 import Dashboard from './Dashboard';
+import { ThemeProvider } from './context/ThemeContext';
 
 function App() {
   const [pathname, setPathname] = useState(
@@ -55,13 +56,15 @@ function App() {
     isLoggedIn && pathname !== '/login';
 
   return (
-    <div className="App">
-      {showDashboard ? (
-        <Dashboard onLogout={handleLogout} />
-      ) : (
-        <Login onLogin={handleLogin} />
-      )}
-    </div>
+    <ThemeProvider>
+      <div className="App">
+        {showDashboard ? (
+          <Dashboard onLogout={handleLogout} />
+        ) : (
+          <Login onLogin={handleLogin} />
+        )}
+      </div>
+    </ThemeProvider>
   );
 }
 

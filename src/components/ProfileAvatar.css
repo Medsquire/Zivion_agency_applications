@@ -1,0 +1,274 @@
+/* ===================================================================
+   PROFILE AVATAR COMPONENT STYLES
+   BEE Property Management Theme
+   =================================================================== */
+
+.profile-avatar-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/* Base Avatar Circle Container */
+.profile-avatar-circle {
+  position: relative;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 50%, #3B82F6 100%);
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 2px 8px rgba(6, 17, 43, 0.25);
+  box-sizing: border-box;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Header Avatar Sizing (~42px) */
+.profile-avatar-wrapper.size-header .profile-avatar-circle {
+  width: 42px;
+  height: 42px;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.35), 0 2px 8px rgba(6, 17, 43, 0.25);
+}
+
+/* Modal Avatar Sizing (~96px) - Matching user mockup */
+.profile-avatar-wrapper.size-modal .profile-avatar-circle {
+  width: 96px;
+  height: 96px;
+  border: 3px solid #FFFFFF;
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.28);
+}
+
+/* Avatar Image */
+.profile-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Initials Styling */
+.profile-avatar-initials {
+  color: #FFFFFF;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.profile-avatar-wrapper.size-header .profile-avatar-initials {
+  font-size: 14.5px;
+}
+
+.profile-avatar-wrapper.size-modal .profile-avatar-initials {
+  font-size: 34px;
+}
+
+/* Loading Overlay on Avatar Circle */
+.profile-avatar-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(9, 30, 71, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(1.5px);
+  z-index: 2;
+}
+
+.profile-avatar-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #FFFFFF;
+  border-radius: 50%;
+  animation: profile-avatar-spin 0.75s linear infinite;
+}
+
+.profile-avatar-wrapper.size-modal .profile-avatar-spinner {
+  width: 24px;
+  height: 24px;
+  border-width: 2.5px;
+}
+
+@keyframes profile-avatar-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Circular Edit Badge */
+.profile-avatar-edit-badge {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: #2563EB;
+  color: #FFFFFF;
+  border: 1.5px solid #FFFFFF;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+  padding: 0;
+  z-index: 4;
+  transition: background-color 0.18s ease, transform 0.15s ease, box-shadow 0.18s ease;
+}
+
+.profile-avatar-edit-badge:hover:not(:disabled) {
+  background-color: #1D4ED8;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+  transform: scale(1.06);
+}
+
+.profile-avatar-edit-badge:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.profile-avatar-edit-badge:focus-visible {
+  outline: 2px solid #93C5FD;
+  outline-offset: 2px;
+}
+
+.profile-avatar-edit-badge:disabled {
+  opacity: 0.85;
+  cursor: wait;
+}
+
+/* Badge Size for Header (20px: within 20–24px requirement) */
+.profile-avatar-wrapper.size-header .profile-avatar-edit-badge {
+  width: 20px;
+  height: 20px;
+  bottom: -2px;
+  right: -2px;
+}
+
+.profile-avatar-wrapper.size-header .profile-avatar-edit-badge svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* Badge Size for Modal (32px requirement) */
+.profile-avatar-wrapper.size-modal .profile-avatar-edit-badge {
+  width: 32px;
+  height: 32px;
+  bottom: 2px;
+  right: 2px;
+  border-width: 2.5px;
+}
+
+.profile-avatar-wrapper.size-modal .profile-avatar-edit-badge svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Feedback Notification Tooltip / Toast */
+.profile-avatar-feedback {
+  position: absolute;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-family: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  animation: feedback-appear 0.2s ease-out;
+  box-shadow: 0 8px 24px rgba(6, 17, 43, 0.35);
+  pointer-events: auto;
+}
+
+.profile-avatar-wrapper.size-header .profile-avatar-feedback {
+  top: calc(100% + 10px);
+  right: 0;
+}
+
+.profile-avatar-wrapper.size-modal .profile-avatar-feedback {
+  top: calc(100% + 8px);
+  left: 0;
+}
+
+.profile-avatar-feedback.feedback-success {
+  background: #091E47;
+  color: #E0F2FE;
+  border: 1px solid #34D399;
+}
+
+.profile-avatar-feedback.feedback-success .feedback-icon {
+  color: #34D399;
+  font-weight: 800;
+}
+
+.profile-avatar-feedback.feedback-error {
+  background: #091E47;
+  color: #FEE2E2;
+  border: 1px solid #F87171;
+}
+
+.profile-avatar-feedback.feedback-error .feedback-icon {
+  color: #F87171;
+  font-weight: 800;
+}
+
+.profile-avatar-feedback .feedback-dismiss {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 0 0 4px;
+  line-height: 1;
+}
+
+.profile-avatar-feedback .feedback-dismiss:hover {
+  color: #FFFFFF;
+}
+
+@keyframes feedback-appear {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 440px) {
+  .profile-avatar-wrapper.size-header .profile-avatar-circle {
+    width: 36px;
+    height: 36px;
+  }
+
+  .profile-avatar-wrapper.size-header .profile-avatar-initials {
+    font-size: 12.5px;
+  }
+
+  .profile-avatar-wrapper.size-header .profile-avatar-edit-badge {
+    width: 18px;
+    height: 18px;
+  }
+
+  .profile-avatar-wrapper.size-header .profile-avatar-edit-badge svg {
+    width: 9px;
+    height: 9px;
+  }
+
+  .profile-avatar-wrapper.size-modal .profile-avatar-circle {
+    width: 82px;
+    height: 82px;
+  }
+
+  .profile-avatar-wrapper.size-modal .profile-avatar-initials {
+    font-size: 28px;
+  }
+}
