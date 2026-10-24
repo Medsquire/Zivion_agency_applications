@@ -7,11 +7,10 @@ import DashboardHome from './pages/DashboardHome';
 import Properties, { apartmentNames } from './pages/Properties';
 import Services from './pages/Services';
 import Technicians from './pages/Technicians';
-import Payments from './pages/Payments';
 import Reports from './pages/Reports';
-import TeamAccess from './pages/TeamAccess';
 import ProfileAvatar from './components/ProfileAvatar';
 import ThemeToggle from './components/ThemeToggle';
+import { getSidebarIcon } from './components/AppIcons';
 import { UserProvider, useUser } from './context/UserContext';
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -404,9 +403,6 @@ function DashboardContent({ onLogout }) {
                 return <Technicians technicians={technicians} />;
 
 
-            case 'Payment Records':
-                return <Payments payments={payments} />;
-
             case 'Reports':
                 return (
                     <Reports
@@ -415,9 +411,6 @@ function DashboardContent({ onLogout }) {
                         payments={payments}
                     />
                 );
-
-            case 'Team & Access':
-                return <TeamAccess agencyAdmin={user} />;
 
             case 'Dashboard':
             default:
@@ -461,8 +454,9 @@ function DashboardContent({ onLogout }) {
                         </button>
 
                         <div className="topbar-title">
-                            <span className="topbar-brand-label">BEE Property Management</span>
+                            <span className="topbar-brand-label">BEE</span>
                             <span className="topbar-divider">/</span>
+                            <span className="topbar-page-icon">{getSidebarIcon(activePage, { size: 16 })}</span>
                             <strong className="topbar-active-page">{activePage}</strong>
                         </div>
                     </div>
@@ -471,37 +465,16 @@ function DashboardContent({ onLogout }) {
                         <ThemeToggle />
                         <button
                             type="button"
-                            className="admin-profile-chip"
+                            className="admin-profile-chip admin-profile-chip-slim"
                             onClick={handleOpenEditModal}
-                            title="Edit Administrator Profile"
-                            aria-label="Edit Administrator Profile"
+                            title={`${user.fullName} (${user.email}) · Edit Profile`}
+                            aria-label={`Edit profile for ${user.fullName}`}
                         >
                             <ProfileAvatar
                                 size="header"
                                 user={user}
                                 onSavePhoto={uploadPhoto}
                             />
-                            <div className="admin-profile-info">
-                                <span className="admin-profile-name">{user.fullName}</span>
-                                <div className="admin-profile-sub">
-                                    <span className="admin-profile-email">{user.email}</span>
-                                    <span className="admin-role-badge">ADMIN</span>
-                                </div>
-                            </div>
-                            <svg
-                                className="admin-profile-chevron"
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden="true"
-                            >
-                                <polyline points="6 9 12 15 18 9" />
-                            </svg>
                         </button>
                     </div>
                 </header>

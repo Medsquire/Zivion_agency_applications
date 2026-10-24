@@ -1,6 +1,15 @@
 
 import React, { useState, useMemo } from 'react';
 import TableScrollSlider from '../components/TableScrollSlider';
+import {
+  DashboardIcon,
+  ServicesIcon,
+  CommunitiesIcon,
+  TechniciansIcon,
+  ReportsIcon,
+  TeamAccessIcon,
+  LogoutIcon,
+} from '../components/AppIcons';
 
 function DashboardHome({
   requests = [],
@@ -64,78 +73,42 @@ function DashboardHome({
       value: pending,
       page: 'Services',
       colorClass: 'color-orange',
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12 6 12 12 16 14" />
-        </svg>
-      ),
+      icon: <ServicesIcon size={18} />,
     },
     {
       title: 'In Progress Requests',
       value: ongoing,
       page: 'Services',
       colorClass: 'color-blue',
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
-        </svg>
-      ),
+      icon: <ServicesIcon size={18} />,
     },
     {
       title: 'Completed Requests',
       value: completed,
       page: 'Services',
       colorClass: 'color-green',
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-          <polyline points="22 4 12 14.01 9 11.01" />
-        </svg>
-      ),
+      icon: <ServicesIcon size={18} />,
     },
     {
       title: 'Technicians',
       value: technicians.length,
       page: 'Technicians',
       colorClass: 'color-purple',
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      ),
+      icon: <TechniciansIcon size={18} />,
     },
     {
-      title: 'Payment Records',
-      value: payments.length,
-      page: 'Payment Records',
+      title: 'Communities',
+      value: apartments.length || 5,
+      page: 'Communities',
       colorClass: 'color-teal',
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="2" y="4" width="20" height="16" rx="2" />
-          <line x1="2" y1="10" x2="22" y2="10" />
-          <circle cx="7" cy="15" r="1" />
-          <path d="M12 15h6" />
-        </svg>
-      ),
+      icon: <CommunitiesIcon size={18} />,
     },
     {
       title: 'Reports',
       value: '06',
       page: 'Reports',
       colorClass: 'color-rose',
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
-          <line x1="16" y1="13" x2="8" y2="13" />
-          <line x1="16" y1="17" x2="8" y2="17" />
-          <polyline points="10 9 9 9 8 9" />
-        </svg>
-      ),
+      icon: <ReportsIcon size={18} />,
     },
   ];
 
@@ -170,8 +143,9 @@ function DashboardHome({
     <div className="page-content">
       {/* Page Heading */}
       <div className="page-heading">
-        <div>
-          <h1>Welcome back, Agency Administrator</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <DashboardIcon size={22} style={{ color: '#2563EB' }} />
+          <h1>Dashboard Overview</h1>
         </div>
       </div>
 
@@ -193,7 +167,9 @@ function DashboardHome({
             </div>
             <div className="overview-card-bottom">
               <h2 className="overview-card-count">{card.value}</h2>
-              <span className="overview-card-link">View details →</span>
+              <span className="overview-card-icon-arrow" aria-hidden="true">
+                <LogoutIcon size={14} />
+              </span>
             </div>
           </button>
         ))}
@@ -205,7 +181,7 @@ function DashboardHome({
             <h2>Apartment Overview</h2>
           </div>
           <label className="apartment-filter">
-            <span>Filter by apartment</span>
+            <span>Filter</span>
             <select
               value={selectedApartment}
               onChange={(event) => setSelectedApartment(event.target.value)}
@@ -220,50 +196,54 @@ function DashboardHome({
           </label>
         </div>
 
-        <div className="apartment-metrics">
-          <article className="apartment-metric apartment-metric-technicians">
-            <span className="apartment-metric-label">Active Technicians</span>
-            <strong className="apartment-metric-value">{apartmentActiveTechnicianCount}</strong>
-            <span className="apartment-metric-note">
-              Available or assigned to service requests
-            </span>
+        <div className="apartment-metrics apartment-metrics-lite">
+          <article className="apartment-metric apartment-metric-technicians" title="Active Technicians available or assigned">
+            <div className="apartment-metric-icon"><TechniciansIcon size={20} /></div>
+            <div className="apartment-metric-info">
+              <strong className="apartment-metric-value">{apartmentActiveTechnicianCount}</strong>
+              <span className="apartment-metric-label">Active Techs</span>
+            </div>
           </article>
-          <article className="apartment-metric apartment-metric-inactive">
-            <span className="apartment-metric-label">Inactive Technicians</span>
-            <strong className="apartment-metric-value">0</strong>
-            <span className="apartment-metric-note">
-              No inactive status is currently tracked
-            </span>
+          <article className="apartment-metric apartment-metric-inactive" title="Inactive Technicians">
+            <div className="apartment-metric-icon"><TechniciansIcon size={20} /></div>
+            <div className="apartment-metric-info">
+              <strong className="apartment-metric-value">0</strong>
+              <span className="apartment-metric-label">Inactive</span>
+            </div>
           </article>
-          <article className="apartment-metric apartment-metric-requests">
-            <span className="apartment-metric-label">Pending Requests</span>
-            <strong className="apartment-metric-value">
-              {apartmentRequests.filter((request) => request.status === 'Pending').length}
-            </strong>
-            <span className="apartment-metric-note">Awaiting service</span>
+          <article className="apartment-metric apartment-metric-requests" title="Pending Service Requests">
+            <div className="apartment-metric-icon"><ServicesIcon size={20} /></div>
+            <div className="apartment-metric-info">
+              <strong className="apartment-metric-value">
+                {apartmentRequests.filter((request) => request.status === 'Pending').length}
+              </strong>
+              <span className="apartment-metric-label">Pending</span>
+            </div>
           </article>
-          <article className="apartment-metric apartment-metric-progress">
-            <span className="apartment-metric-label">In Progress Requests</span>
-            <strong className="apartment-metric-value">
-              {apartmentRequests.filter((request) => request.status === 'In Progress').length}
-            </strong>
-            <span className="apartment-metric-note">Currently being handled</span>
+          <article className="apartment-metric apartment-metric-progress" title="In Progress Requests">
+            <div className="apartment-metric-icon"><ServicesIcon size={20} /></div>
+            <div className="apartment-metric-info">
+              <strong className="apartment-metric-value">
+                {apartmentRequests.filter((request) => request.status === 'In Progress').length}
+              </strong>
+              <span className="apartment-metric-label">In Progress</span>
+            </div>
           </article>
-          <article className="apartment-metric apartment-metric-departments">
-            <span className="apartment-metric-label">No. of Departments</span>
-            <strong className="apartment-metric-value">7</strong>
-            <span className="apartment-metric-note">Departments per property</span>
+          <article className="apartment-metric apartment-metric-departments" title="Departments per property">
+            <div className="apartment-metric-icon"><CommunitiesIcon size={20} /></div>
+            <div className="apartment-metric-info">
+              <strong className="apartment-metric-value">7</strong>
+              <span className="apartment-metric-label">Depts</span>
+            </div>
           </article>
-          <article className="apartment-metric apartment-metric-agencies">
-            <span className="apartment-metric-label">Agencies</span>
-            <strong className="apartment-metric-value apartment-metric-value-list">
-              {apartmentAgencyNames.length
-                ? apartmentAgencyNames.join(', ')
-                : 'No agencies assigned'}
-            </strong>
-            <span className="apartment-metric-note">
-              {selectedApartment === 'All Apartments' ? 'Across all properties' : selectedApartment}
-            </span>
+          <article className="apartment-metric apartment-metric-agencies" title={selectedApartment === 'All Apartments' ? 'Agencies across all properties' : selectedApartment}>
+            <div className="apartment-metric-icon"><TeamAccessIcon size={20} /></div>
+            <div className="apartment-metric-info">
+              <strong className="apartment-metric-value">
+                {apartmentAgencyNames.length || 0}
+              </strong>
+              <span className="apartment-metric-label">Agencies</span>
+            </div>
           </article>
         </div>
       </section>
@@ -285,10 +265,12 @@ function DashboardHome({
             />
             <button
               type="button"
-              className="primary-button"
+              className="primary-button lite-action-btn"
               onClick={() => onNavigate('Services')}
+              title="View all service requests"
             >
-              View all requests →
+              <ServicesIcon size={15} />
+              <span>All Requests</span>
             </button>
           </div>
         </div>
@@ -367,10 +349,12 @@ function DashboardHome({
                     <td style={{ textAlign: 'right' }}>
                       <button
                         type="button"
-                        className="table-quick-action"
+                        className="table-quick-action-icon"
+                        title="Manage request"
+                        aria-label={`Manage request ${request.id}`}
                         onClick={() => onNavigate('Services')}
                       >
-                        Manage →
+                        <ServicesIcon size={15} />
                       </button>
                     </td>
                   </tr>

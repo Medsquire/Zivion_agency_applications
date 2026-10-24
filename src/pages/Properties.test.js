@@ -83,13 +83,13 @@ describe('Communities & Properties Exact UI & Hierarchy Flow', () => {
     expect(screen.getByText(/Verified \(KYC Complete\)/i)).toBeInTheDocument();
 
     // Verify Tab 2: Bills & Dues
-    const billsTab = screen.getByRole('button', { name: /💳 Bills & Dues/i });
+    const billsTab = screen.getByRole('button', { name: /Bills & Dues/i });
     fireEvent.click(billsTab);
     expect(screen.getByText(/OUTSTANDING MAINTENANCE DUES/i)).toBeInTheDocument();
     expect(screen.getByText(/Monthly Maintenance Fee/i)).toBeInTheDocument();
 
     // Verify Tab 4: Team Admins (from Team & Access)
-    const adminsTab = screen.getByRole('button', { name: /🏢 Team Admins/i });
+    const adminsTab = screen.getByRole('button', { name: /Team Admins/i });
     fireEvent.click(adminsTab);
     expect(screen.getByText(/Governance & Administrative Contacts/i)).toBeInTheDocument();
     expect(screen.getByText(/Rajeshwar Rao \(Gold Community Operations Lead\)/i)).toBeInTheDocument();
@@ -98,13 +98,13 @@ describe('Communities & Properties Exact UI & Hierarchy Flow', () => {
     expect(screen.getByText(/Suresh Babu/i)).toBeInTheDocument();
 
     // Verify Tab 5: Unit Specs
-    const specsTab = screen.getByRole('button', { name: /📋 Unit Specs/i });
+    const specsTab = screen.getByRole('button', { name: /Unit Specs/i });
     fireEvent.click(specsTab);
     expect(screen.getByText(/Configuration/i)).toBeInTheDocument();
     expect(screen.getByText(/Reserved Parking/i)).toBeInTheDocument();
 
     // Verify Tab 3: Service Tickets & Interactive Ticket Raising
-    const ticketsTab = screen.getByRole('button', { name: /🛠️ Service Tickets/i });
+    const ticketsTab = screen.getByRole('button', { name: /Service Tickets/i });
     fireEvent.click(ticketsTab);
     expect(screen.getByRole('button', { name: /\+ Raise New Ticket/i })).toBeInTheDocument();
 

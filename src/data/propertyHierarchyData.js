@@ -12,7 +12,7 @@ export const COMMUNITY_TIERS = [
     tier: 'Diamond',
     name: 'Diamond Communities',
 
-    icon: '💎',
+    icon: 'diamond',
     tagline: 'Ultra-Luxury High-Rise & Concierge Communities',
     description: 'Premier gated sky-villas and high-rises with 5-star concierge, smart building automation, and Olympic sports complexes.',
     accentColor: '#0284C7',
@@ -33,7 +33,7 @@ export const COMMUNITY_TIERS = [
     tier: 'Gold',
     name: 'Gold Communities',
 
-    icon: '⭐',
+    icon: 'gold',
     tagline: 'Premium Executive Residential Enclaves',
     description: 'Elite residential enclaves featuring dedicated agency maintenance teams, landscaped clubhouse facilities, and power backup.',
     accentColor: '#D97706',
@@ -54,7 +54,7 @@ export const COMMUNITY_TIERS = [
     tier: 'Silver',
     name: 'Silver Communities',
 
-    icon: '🛡️',
+    icon: 'silver',
     tagline: 'Contemporary Green & Smart Living Societies',
     description: 'Sustainable, family-first residential societies with green parks, 24/7 security, and community-driven resident associations.',
     accentColor: '#475569',

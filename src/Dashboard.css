@@ -62,19 +62,21 @@ body {
 }
 
 /* ===================================================================
-   SIDEBAR (MODERN SHARP GEOMETRIC LAYOUT)
+   SIDEBAR (SLIM ICON-ONLY EXECUTIVE NAVIGATION)
    =================================================================== */
-.sidebar {
-  width: 260px;
-  min-width: 260px;
+.sidebar,
+.sidebar.sidebar-slim {
+  width: 72px;
+  min-width: 72px;
   height: 100vh;
   position: sticky;
   top: 0;
   background: linear-gradient(180deg, #091E47 0%, #0F2D6B 50%, #08193D 100%);
   color: #FFFFFF;
-  padding: 24px 16px;
+  padding: 20px 10px;
   display: flex;
   flex-direction: column;
+  align-items: center;
   flex-shrink: 0;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   box-sizing: border-box;
@@ -85,18 +87,19 @@ body {
 .sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 4px 8px 22px;
+  justify-content: center;
+  width: 100%;
+  padding: 0 0 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .brand-logo {
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   border-radius: var(--radius-card);
   background: linear-gradient(135deg, #2563EB 0%, #60A5FA 100%);
   color: #FFFFFF;
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 900;
   display: flex;
   align-items: center;
@@ -104,76 +107,44 @@ body {
   flex-shrink: 0;
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45);
   font-family: 'Outfit', sans-serif;
-}
-
-.brand-text h2 {
-  font-size: 17px;
-  font-weight: 800;
-  margin: 0;
-  color: #FFFFFF;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-  font-family: 'Outfit', sans-serif;
-}
-
-.brand-text p {
-  font-size: 9.5px;
-  color: #93C5FD;
-  margin: 3px 0 0;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.sidebar-label {
-  font-size: 10.5px;
-  font-weight: 700;
-  color: #93C5FD;
-  opacity: 0.85;
-  letter-spacing: 0.09em;
-  padding: 22px 10px 10px;
-  margin: 0;
-  text-transform: uppercase;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  cursor: pointer;
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+  margin-top: 16px;
 }
 
 .nav-item {
-  width: 100%;
-  text-align: left;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
+  justify-content: center;
+  padding: 0;
+  position: relative;
   border: none;
   border-radius: var(--radius-card);
   color: #CBD5E1;
   background: transparent;
   cursor: pointer;
-  font-size: 13.5px;
-  font-family: inherit;
-  font-weight: 600;
   transition: all 0.18s ease;
 }
 
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
   color: #FFFFFF;
-  transform: translateX(2px);
+  transform: translateY(-1px);
 }
 
 .nav-item.active {
-  background: linear-gradient(90deg, rgba(37, 99, 235, 0.45) 0%, rgba(59, 130, 246, 0.22) 100%);
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
   color: #FFFFFF;
-  font-weight: 700;
-  border-left: 3px solid #60A5FA;
-  border-radius: 0 var(--radius-card) var(--radius-card) 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45);
 }
 
 .nav-icon {
@@ -186,38 +157,67 @@ body {
   flex-shrink: 0;
 }
 
-.nav-title {
-  flex: 1;
+.nav-tooltip,
+.account-tooltip,
+.logout-tooltip {
+  position: absolute;
+  left: calc(100% + 14px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-6px);
+  background: #0A1E4A;
+  color: #FFFFFF;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(96, 165, 250, 0.25);
+  z-index: 1000;
+  font-family: var(--font-sans);
+}
+
+.nav-item:hover .nav-tooltip,
+.account-box:hover .account-tooltip,
+.logout-button:hover .logout-tooltip {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
 }
 
 .nav-indicator {
+  position: absolute;
+  right: 5px;
+  top: 5px;
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: #60A5FA;
   box-shadow: 0 0 8px #60A5FA;
-  display: inline-block;
-  margin-left: auto;
 }
 
 .sidebar-account {
   margin-top: auto;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 16px;
+  padding-top: 14px;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 10px;
+  width: 100%;
 }
 
 .account-box {
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 14px;
-  backdrop-filter: blur(10px);
+  justify-content: center;
+  position: relative;
+  border-radius: 50%;
+  cursor: pointer;
 }
 
 .account-avatar {
@@ -236,6 +236,11 @@ body {
   flex-shrink: 0;
   font-family: 'Outfit', sans-serif;
   overflow: hidden;
+  transition: transform 0.18s ease;
+}
+
+.account-avatar:hover {
+  transform: scale(1.06);
 }
 
 .account-avatar-img {
@@ -245,61 +250,19 @@ body {
   display: block;
 }
 
-.account-sub-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 2px;
-}
-
-.account-badge {
-  background: #60A5FA;
-  color: #0A1E4A;
-  font-size: 8.5px;
-  font-weight: 850;
-  padding: 1.5px 6px;
-  border-radius: 9999px;
-  letter-spacing: 0.04em;
-  line-height: 1.2;
-  font-family: 'Outfit', sans-serif;
-}
-
-.account-meta {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.account-name {
-  font-size: 12px;
-  font-weight: 700;
-  color: #FFFFFF;
-  line-height: 1.2;
-}
-
-.account-email {
-  font-size: 10.5px;
-  color: #93C5FD;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .logout-button {
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 9px 12px;
-  background: rgba(239, 68, 68, 0.16);
-  border: 1px solid rgba(239, 68, 68, 0.35);
+  padding: 0;
+  position: relative;
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.3);
   border-radius: var(--radius-card);
   color: #FCA5A5;
-  font-size: 12.5px;
-  font-weight: 600;
   cursor: pointer;
-  font-family: inherit;
   transition: all 0.2s ease;
 }
 
@@ -307,6 +270,7 @@ body {
   background: #EF4444;
   border-color: #EF4444;
   color: #FFFFFF;
+  transform: scale(1.05);
 }
 
 /* ===================================================================
@@ -362,7 +326,14 @@ body {
 }
 
 .topbar-title span {
-  color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.topbar-page-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #60A5FA !important;
 }
 
 .topbar-title strong {
@@ -391,6 +362,24 @@ body {
   font-family: inherit;
   transition: all 0.2s ease;
   box-shadow: 0 2px 10px rgba(6, 17, 43, 0.2);
+}
+
+.admin-profile-chip.admin-profile-chip-slim {
+  padding: 3px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  gap: 0;
+}
+
+.admin-profile-chip.admin-profile-chip-slim:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: #60A5FA;
+  transform: scale(1.08);
 }
 
 .admin-profile-chip:hover {
@@ -888,6 +877,119 @@ body {
 .apartment-metric-note {
   color: var(--text-secondary);
   font-size: 10px;
+}
+
+/* ── Lightweight Apartment Metrics Strip ── */
+.apartment-metrics-lite {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.apartment-metrics-lite .apartment-metric {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(10, 30, 74, 0.05);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.apartment-metrics-lite .apartment-metric:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(10, 30, 74, 0.08);
+}
+
+.apartment-metric-icon {
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.apartment-metric-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.apartment-metric-info .apartment-metric-value {
+  font-size: 20px;
+  font-weight: 850;
+  line-height: 1.1;
+  color: var(--metric-accent);
+}
+
+.apartment-metric-info .apartment-metric-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+/* ── Lightweight Table & Card Action Buttons ── */
+.overview-card-icon-arrow {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--surface-pale);
+  color: var(--overview-accent);
+  transition: all 0.2s ease;
+}
+
+.overview-card:hover .overview-card-icon-arrow {
+  background: var(--overview-accent);
+  color: #FFFFFF;
+  transform: translateX(3px);
+}
+
+.table-quick-action-icon {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-blue);
+  background: var(--surface-pale);
+  color: var(--primary-blue);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  padding: 0;
+}
+
+.table-quick-action-icon:hover {
+  background: var(--primary-blue);
+  color: #FFFFFF;
+  border-color: var(--primary-blue);
+  transform: scale(1.08);
+}
+
+.lite-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+}
+
+/* ── Modern KPI Box Icon Layout for Reports ── */
+.modern-kpi-icon {
+  font-size: 24px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.modern-kpi-body {
+  display: flex;
+  flex-direction: column;
 }
 
 /* ===================================================================

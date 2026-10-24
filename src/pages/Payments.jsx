@@ -1,6 +1,7 @@
 
 import React from 'react';
 import TableScrollSlider from '../components/TableScrollSlider';
+import { PaymentsIcon } from '../components/AppIcons';
 
 function Payments({ payments }) {
   const totalAmount = payments.reduce(
@@ -20,32 +21,17 @@ function Payments({ payments }) {
     {
       title: 'Total Recorded',
       value: `₹${totalAmount.toLocaleString('en-IN')}`,
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="2" y="5" width="20" height="14" rx="2" />
-          <line x1="2" y1="10" x2="22" y2="10" />
-        </svg>
-      ),
+      icon: <PaymentsIcon size={20} />,
     },
     {
       title: 'Paid Collections',
       value: `₹${paidAmount.toLocaleString('en-IN')}`,
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-          <polyline points="22 4 12 14.01 9 11.01" />
-        </svg>
-      ),
+      icon: <PaymentsIcon size={20} />,
     },
     {
       title: 'Pending Invoices',
       value: `₹${pendingAmount.toLocaleString('en-IN')}`,
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12 6 12 12 16 14" />
-        </svg>
-      ),
+      icon: <PaymentsIcon size={20} />,
     },
   ];
 
@@ -60,7 +46,8 @@ function Payments({ payments }) {
   return (
     <div className="page-content">
       <div className="page-heading">
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <PaymentsIcon size={22} style={{ color: '#2563EB' }} />
           <h1>Payment Records</h1>
         </div>
       </div>
@@ -76,7 +63,6 @@ function Payments({ payments }) {
             </div>
             <div className="overview-card-bottom">
               <h2 className="overview-card-count">{card.value}</h2>
-              <span className="overview-card-link"></span>
             </div>
           </div>
         ))}

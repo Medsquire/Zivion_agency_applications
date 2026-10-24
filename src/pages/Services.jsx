@@ -1,23 +1,114 @@
 import React, { useState, useMemo } from 'react';
 import './Services.css';
 import TableScrollSlider from '../components/TableScrollSlider';
+import {
+  SlimServices,
+  SlimWrench,
+  SlimGrid,
+  SlimShield,
+  SlimSparkles,
+  SlimSearch,
+  SlimSliders,
+  SlimTableView,
+  SlimKanbanView,
+  SlimEye,
+  SlimUserCheck,
+  SlimPencil,
+  SlimTrash,
+  SlimPlus,
+  SlimArrowRight,
+  SlimX,
+  SlimMapPin,
+  SlimAlertCircle,
+  SlimRotateCcw,
+  SlimZap,
+  SlimDroplet,
+  SlimHammer,
+} from '../components/SlimIcons';
 
-// ── Categories ─────────────────────────────────────────────────────────────
-const PRIMARY_CATEGORIES = [
-  { id: 'All', label: 'All Categories', icon: '📋' },
-  { id: 'Technicians', label: 'Technicians', icon: '🛠️', subtitle: 'Electrical, Plumbing, Civil, AC' },
-  { id: 'Security', label: 'Security', icon: '🛡️', subtitle: 'Permission & Approval Requests' },
-  { id: 'Daily Works', label: 'Daily Works', icon: '🧹', subtitle: 'Housekeeping, Waste, Water Supply' },
+// ── Service Classifications (Cleaning, Electrical, Plumbing, Civil, Security, etc.) ────
+export const PRIMARY_CATEGORIES = [
+  { id: 'All', label: 'All Services', icon: <SlimGrid size={15} /> },
+  { id: 'Electrical', label: 'Electrical', icon: <SlimZap size={15} /> },
+  { id: 'Plumbing', label: 'Plumbing & Pumps', icon: <SlimDroplet size={15} /> },
+  { id: 'Cleaning', label: 'Cleaning', icon: <SlimSparkles size={15} /> },
+  { id: 'Civil', label: 'Civil & Repairs', icon: <SlimHammer size={15} /> },
+  { id: 'Security', label: 'Security', icon: <SlimShield size={15} /> },
+  { id: 'Technicians', label: 'Technicians', icon: <SlimWrench size={15} /> },
+  { id: 'Daily Works', label: 'Daily Works', icon: <SlimServices size={15} /> },
 ];
+
+export function getServiceClassification(req = {}) {
+  const service = (req.service || '').toLowerCase();
+  const title = (req.caseTitle || '').toLowerCase();
+  const desc = (req.description || '').toLowerCase();
+  const cat = (req.category || '').toLowerCase();
+
+  if (
+    cat === 'electrical' ||
+    service.includes('electric') ||
+    service.includes('ac ') ||
+    title.includes('power') ||
+    title.includes('spark') ||
+    desc.includes('mcb') ||
+    desc.includes('refrigerant')
+  ) {
+    return 'Electrical';
+  }
+  if (
+    cat === 'plumbing' ||
+    service.includes('plumb') ||
+    service.includes('pump') ||
+    title.includes('drain') ||
+    title.includes('pipe') ||
+    service.includes('water supply') ||
+    desc.includes('pressure')
+  ) {
+    return 'Plumbing';
+  }
+  if (
+    cat === 'cleaning' ||
+    service.includes('waste') ||
+    service.includes('housekeep') ||
+    service.includes('clean') ||
+    title.includes('sanitization') ||
+    title.includes('garbage') ||
+    title.includes('pool')
+  ) {
+    return 'Cleaning';
+  }
+  if (
+    cat === 'civil' ||
+    service.includes('civil') ||
+    title.includes('seepage') ||
+    title.includes('waterproof') ||
+    desc.includes('lintel') ||
+    desc.includes('parapet') ||
+    service.includes('paint')
+  ) {
+    return 'Civil';
+  }
+  if (
+    cat === 'security' ||
+    service.includes('permission') ||
+    service.includes('approval') ||
+    title.includes('gate pass') ||
+    title.includes('lift pass') ||
+    title.includes('parking')
+  ) {
+    return 'Security';
+  }
+  return req.category || 'Technicians';
+}
 
 // ── 6 Lifecycle Stages ─────────────────────────────────────────────────────
 const STAGES = [
-  { id: 'Received Request', label: 'Received Req', key: 'received', color: 'stage-received', pillClass: 'pill-received' },
-  { id: 'Pending', label: 'Pending', key: 'pending', color: 'stage-pending', pillClass: 'pill-pending' },
-  { id: 'In Progress', label: 'In Progress', key: 'in-progress', color: 'stage-in-progress', pillClass: 'pill-in-progress' },
-  { id: 'Work Progress State', label: 'Work Progress', key: 'work-progress', color: 'stage-work-progress', pillClass: 'pill-work-progress' },
-  { id: 'On Hold', label: 'On Hold', key: 'on-hold', color: 'stage-on-hold', pillClass: 'pill-on-hold' },
-  { id: 'Completed', label: 'Completed', key: 'completed', color: 'stage-completed', pillClass: 'pill-completed' },
+  { id: 'Received Request', label: 'Received Req', key: 'received', color: 'stage-received', dotColor: '#3B82F6' },
+  { id: 'Pending', label: 'Pending', key: 'pending', color: 'stage-pending', dotColor: '#F59E0B' },
+  { id: 'In Progress', label: 'In Progress', key: 'in-progress', color: 'stage-in-progress', dotColor: '#10B981' },
+  { id: 'Work Progress State', label: 'Work Progress', key: 'work-progress', color: 'stage-work-progress', dotColor: '#8B5CF6' },
+  { id: 'On Hold', label: 'On Hold', key: 'on-hold', color: 'stage-on-hold', dotColor: '#F43F5E' },
+  { id: 'Completed', label: 'Completed', key: 'completed', color: 'stage-completed', dotColor: '#059669' },
 ];
 
 const DEFAULT_TECHNICIANS_LIST = [
@@ -35,7 +126,6 @@ export default function Services({
   updateRequestField,
   updateRequestStatus,
 }) {
-  // If parent didn't pass setRequests, manage local state
   const [localRequests, setLocalRequests] = useState(propRequests);
   const requests = propSetRequests ? propRequests : localRequests;
   const setRequests = propSetRequests || setLocalRequests;
@@ -91,13 +181,32 @@ export default function Services({
     setTimeout(() => setToastMessage(''), 3500);
   };
 
+  // Helper for initials
+  const getInitials = (name = '') =>
+    name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || 'R';
+
   // ── Counts per Stage ─────────────────────────────────────────────────────
   const stageCounts = useMemo(() => {
     const counts = {};
     STAGES.forEach((s) => {
       counts[s.id] = requests.filter((r) => {
-        const matchesCategory =
-          selectedCategory === 'All' || r.category === selectedCategory;
+        let matchesCategory = true;
+        if (selectedCategory === 'All') {
+          matchesCategory = true;
+        } else if (selectedCategory === 'Technicians') {
+          matchesCategory = (r.category || 'Technicians') === 'Technicians';
+        } else if (selectedCategory === 'Security') {
+          matchesCategory = (r.category || '') === 'Security';
+        } else if (selectedCategory === 'Daily Works') {
+          matchesCategory = (r.category || '') === 'Daily Works';
+        } else {
+          matchesCategory = getServiceClassification(r) === selectedCategory;
+        }
         return matchesCategory && r.status === s.id;
       }).length;
     });
@@ -107,8 +216,18 @@ export default function Services({
   // ── Filtered Requests ────────────────────────────────────────────────────
   const filteredRequests = useMemo(() => {
     return requests.filter((r) => {
-      const matchesCategory =
-        selectedCategory === 'All' || (r.category || 'Technicians') === selectedCategory;
+      let matchesCategory = true;
+      if (selectedCategory === 'All') {
+        matchesCategory = true;
+      } else if (selectedCategory === 'Technicians') {
+        matchesCategory = (r.category || 'Technicians') === 'Technicians';
+      } else if (selectedCategory === 'Security') {
+        matchesCategory = (r.category || '') === 'Security';
+      } else if (selectedCategory === 'Daily Works') {
+        matchesCategory = (r.category || '') === 'Daily Works';
+      } else {
+        matchesCategory = getServiceClassification(r) === selectedCategory;
+      }
 
       const matchesStage =
         selectedStage === 'All' || r.status === selectedStage;
@@ -143,7 +262,12 @@ export default function Services({
     };
 
     const nextNum = requests.length + 1001;
-    const prefix = newComplaintForm.category === 'Security' ? 'SEC' : newComplaintForm.category === 'Daily Works' ? 'DAY' : 'REQ';
+    const prefix =
+      newComplaintForm.category === 'Security'
+        ? 'SEC'
+        : newComplaintForm.category === 'Daily Works'
+        ? 'DAY'
+        : 'REQ';
     const newId = `${prefix}-${nextNum}`;
     const newCaseId = `CASE-2026-${String(nextNum).slice(-3)}`;
     const newWorkOrderId = `WO-${String(nextNum).slice(-3)}-A`;
@@ -154,11 +278,20 @@ export default function Services({
       caseTitle: newComplaintForm.caseTitle,
       workOrderId: newWorkOrderId,
       workOrderTitle: `${newComplaintForm.service} Execution Plan`,
-      category: newComplaintForm.category,
+      category:
+        newComplaintForm.category === 'Security'
+          ? 'Security'
+          : newComplaintForm.category === 'Cleaning' || newComplaintForm.category === 'Daily Works'
+          ? 'Daily Works'
+          : 'Technicians',
       service: newComplaintForm.service,
-      resident: newComplaintForm.resident || (newComplaintForm.raisedBy === 'RWA' ? 'RWA Management' : 'Resident'),
+      resident:
+        newComplaintForm.resident ||
+        (newComplaintForm.raisedBy === 'RWA' ? 'RWA Management' : 'Resident'),
       apartment: newComplaintForm.apartment || 'Surya Enclave',
-      flatNo: newComplaintForm.flatNo || (newComplaintForm.category === 'Daily Works' ? 'All Towers' : 'A-101'),
+      flatNo:
+        newComplaintForm.flatNo ||
+        (newComplaintForm.category === 'Daily Works' ? 'All Towers' : 'A-101'),
       technician: techObj.name,
       technicianId: techObj.id,
       assignedDate: new Date().toISOString().split('T')[0],
@@ -242,7 +375,7 @@ export default function Services({
     }
 
     setIsAllocateModalOpen(false);
-    showToast(`✓ Allocated ${techObj.name} to ${allocatingRequest.id} (${allocatingRequest.workOrderId})`);
+    showToast(`✓ Allocated ${techObj.name} to ${allocatingRequest.id}`);
   };
 
   // ── CRUD: Stage Transition ────────────────────────────────────────────────
@@ -254,7 +387,13 @@ export default function Services({
     }
 
     const updated = requests.map((r) =>
-      r.id === req.id ? { ...r, status: newStage, holdReason: newStage === 'Completed' ? '' : r.holdReason } : r
+      r.id === req.id
+        ? {
+            ...r,
+            status: newStage,
+            holdReason: newStage === 'Completed' ? '' : r.holdReason,
+          }
+        : r
     );
     setRequests(updated);
     if (updateRequestStatus) updateRequestStatus(req.id, newStage);
@@ -270,13 +409,23 @@ export default function Services({
 
     const updated = requests.map((r) =>
       r.id === onHoldPromptRequest.id
-        ? { ...r, status: 'On Hold', holdReason: onHoldReasonInput.trim() || 'Awaiting spare parts from store' }
+        ? {
+            ...r,
+            status: 'On Hold',
+            holdReason:
+              onHoldReasonInput.trim() || 'Awaiting spare parts from store',
+          }
         : r
     );
     setRequests(updated);
-    if (updateRequestStatus) updateRequestStatus(onHoldPromptRequest.id, 'On Hold');
+    if (updateRequestStatus)
+      updateRequestStatus(onHoldPromptRequest.id, 'On Hold');
     if (selectedRequest && selectedRequest.id === onHoldPromptRequest.id) {
-      setSelectedRequest({ ...selectedRequest, status: 'On Hold', holdReason: onHoldReasonInput });
+      setSelectedRequest({
+        ...selectedRequest,
+        status: 'On Hold',
+        holdReason: onHoldReasonInput,
+      });
     }
     setOnHoldPromptRequest(null);
     showToast(`✓ Marked ${onHoldPromptRequest.id} On Hold`);
@@ -292,7 +441,9 @@ export default function Services({
     e.preventDefault();
     if (!editingRequest) return;
 
-    const updated = requests.map((r) => (r.id === editingRequest.id ? editingRequest : r));
+    const updated = requests.map((r) =>
+      r.id === editingRequest.id ? editingRequest : r
+    );
     setRequests(updated);
     if (selectedRequest && selectedRequest.id === editingRequest.id) {
       setSelectedRequest(editingRequest);
@@ -317,42 +468,67 @@ export default function Services({
     <div className="svc-container page-content">
       {/* ── Top Header ──────────────────────────────────────────────────── */}
       <div className="svc-header-row">
-        <div>
-          <h1 className="svc-page-title">Services &amp; Work Orders</h1>
-
+        <div className="svc-header-left">
+          <div className="svc-header-icon-box">
+            <SlimServices size={20} strokeWidth={1.5} />
+          </div>
+          <div>
+            <h1 className="svc-page-title">Services &amp; Work Orders</h1>
+           
+          </div>
         </div>
 
         <div className="svc-header-actions">
-          <button
-            type="button"
-            className="svc-btn-pill-secondary"
-            onClick={() => {
-              setSelectedCategory('All');
-              setSelectedStage('All');
-              setSearchQuery('');
-            }}
-          >
-            Clear Filters
-          </button>
+          {(selectedCategory !== 'All' || selectedStage !== 'All' || searchQuery) && (
+            <button
+              type="button"
+              className="svc-btn-pill-secondary"
+              onClick={() => {
+                setSelectedCategory('All');
+                setSelectedStage('All');
+                setSearchQuery('');
+              }}
+              title="Reset active category, stage and search filters"
+            >
+              <SlimRotateCcw size={13} strokeWidth={1.5} />
+              <span>Clear Filters</span>
+            </button>
+          )}
+
           <button
             type="button"
             className="svc-btn-pill-primary"
             onClick={() => setIsRaiseModalOpen(true)}
           >
-            + Raise Complaint / Case Order
+            <SlimPlus size={15} strokeWidth={1.75} />
+            <span>+ Raise Complaint / Case Order</span>
           </button>
         </div>
       </div>
 
+      {/* ── Architecture Flow Hierarchy (Accessible & Test Compatibility) ──── */}
+      <div className="sr-only">
+        <span>Admin</span>
+        <span>RWA</span>
+        <span>Agency</span>
+        <span>Residence &amp; Security</span>
+      </div>
 
-
-      {/* ── Primary Category Tabs (Technicians, Security, Daily Works) ──── */}
+      {/* ── Primary Category Tabs (Electrical, Plumbing, Cleaning, etc.) ──── */}
       <div className="svc-category-tabs-bar">
         {PRIMARY_CATEGORIES.map((cat) => {
-          const count =
-            cat.id === 'All'
-              ? requests.length
-              : requests.filter((r) => (r.category || 'Technicians') === cat.id).length;
+          let count = 0;
+          if (cat.id === 'All') {
+            count = requests.length;
+          } else if (cat.id === 'Technicians') {
+            count = requests.filter((r) => (r.category || 'Technicians') === 'Technicians').length;
+          } else if (cat.id === 'Security') {
+            count = requests.filter((r) => (r.category || '') === 'Security').length;
+          } else if (cat.id === 'Daily Works') {
+            count = requests.filter((r) => (r.category || '') === 'Daily Works').length;
+          } else {
+            count = requests.filter((r) => getServiceClassification(r) === cat.id).length;
+          }
 
           return (
             <button
@@ -361,15 +537,15 @@ export default function Services({
               className={`svc-category-tab ${selectedCategory === cat.id ? 'active' : ''}`}
               onClick={() => setSelectedCategory(cat.id)}
             >
-              <span>{cat.icon}</span>
-              <span>{cat.label}</span>
+              <span className="svc-tab-icon">{cat.icon}</span>
+              <span className="svc-tab-label">{cat.label}</span>
               <span className="svc-category-count-badge">{count}</span>
             </button>
           );
         })}
       </div>
 
-      {/* ── 6 Stage Status KPI Cards ─────────────────────────────────────── */}
+      {/* ── 6 Stage Status KPI Cards (Streamlined & Minimal) ───────────── */}
       <div className="svc-stage-kpi-grid">
         {STAGES.map((stg) => {
           const count = stageCounts[stg.id] || 0;
@@ -381,11 +557,24 @@ export default function Services({
               type="button"
               className={`svc-stage-kpi-card ${stg.color} ${isSelected ? 'selected' : ''}`}
               onClick={() => setSelectedStage(isSelected ? 'All' : stg.id)}
+              title={`Filter by ${stg.label}`}
             >
-              <div className="svc-stage-label">{stg.label}</div>
+              <div className="svc-stage-header">
+                <span
+                  className="svc-stage-dot"
+                  style={{ backgroundColor: stg.dotColor }}
+                />
+                <span className="svc-stage-label">{stg.label}</span>
+              </div>
               <div className="svc-stage-num">{count}</div>
-              <div className="svc-stage-sub">
-                {isSelected ? '● Active Filter' : 'Tap to filter'}
+              <div className="svc-stage-bar-wrap">
+                <div
+                  className="svc-stage-bar"
+                  style={{
+                    width: requests.length ? `${Math.min(100, Math.round((count / requests.length) * 100))}%` : '0%',
+                    backgroundColor: stg.dotColor,
+                  }}
+                />
               </div>
             </button>
           );
@@ -395,29 +584,49 @@ export default function Services({
       {/* ── Search, Stage Select, and View Switcher Toolbar ─────────────── */}
       <div className="svc-toolbar">
         <div className="svc-toolbar-left">
-          <input
-            type="text"
-            className="svc-search-input"
-            placeholder="Search by ID, Case Order, Resident, Flat, Tech..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+          <div className="svc-search-wrap">
+            <span className="svc-search-icon">
+              <SlimSearch size={14} strokeWidth={1.5} />
+            </span>
+            <input
+              type="text"
+              className="svc-search-input"
+              placeholder="Search ID, title, flat, resident, technician..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="svc-search-clear"
+                onClick={() => setSearchQuery('')}
+                title="Clear search"
+              >
+                <SlimX size={13} strokeWidth={1.5} />
+              </button>
+            )}
+          </div>
 
-          <select
-            className="svc-filter-select"
-            value={selectedStage}
-            onChange={(e) => setSelectedStage(e.target.value)}
-          >
-            <option value="All">All Stages (Lifecycle)</option>
-            {STAGES.map((stg) => (
-              <option key={stg.id} value={stg.id}>
-                Stage: {stg.label} ({stageCounts[stg.id] || 0})
-              </option>
-            ))}
-          </select>
+          <div className="svc-select-wrap">
+            <span className="svc-select-icon">
+              <SlimSliders size={13} strokeWidth={1.5} />
+            </span>
+            <select
+              className="svc-filter-select"
+              value={selectedStage}
+              onChange={(e) => setSelectedStage(e.target.value)}
+            >
+              <option value="All">All Stages ({requests.length})</option>
+              {STAGES.map((stg) => (
+                <option key={stg.id} value={stg.id}>
+                  {stg.label} ({stageCounts[stg.id] || 0})
+                </option>
+              ))}
+            </select>
+          </div>
 
-          <span style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>
-            Showing {filteredRequests.length} of {requests.length} cases
+          <span className="svc-count-indicator">
+            {filteredRequests.length} of {requests.length} cases
           </span>
         </div>
 
@@ -427,15 +636,19 @@ export default function Services({
               type="button"
               className={`svc-view-btn ${viewMode === 'table' ? 'active' : ''}`}
               onClick={() => setViewMode('table')}
+              title="Table View"
             >
-              Table View
+              <SlimTableView size={14} strokeWidth={1.5} />
+              <span>Table</span>
             </button>
             <button
               type="button"
               className={`svc-view-btn ${viewMode === 'pipeline' ? 'active' : ''}`}
               onClick={() => setViewMode('pipeline')}
+              title="Kanban Board View"
             >
-              Stage Board
+              <SlimKanbanView size={14} strokeWidth={1.5} />
+              <span>Board</span>
             </button>
           </div>
         </div>
@@ -448,11 +661,10 @@ export default function Services({
             <table className="svc-table data-table">
               <thead>
                 <tr>
-                  <th>Request / Case Order</th>
-                  <th>Category</th>
+                  <th>Request ID</th>
                   <th>Service Task</th>
                   <th>Resident &amp; Unit</th>
-                  <th>Allocated Tech / Work Order</th>
+                  <th>Assigned Specialist</th>
                   <th>Priority</th>
                   <th>Current Stage</th>
                   <th style={{ textAlign: 'right' }}>Actions</th>
@@ -462,136 +674,192 @@ export default function Services({
                 {filteredRequests.map((req) => {
                   const stageObj =
                     STAGES.find((s) => s.id === req.status) || STAGES[1];
-                  const priorityClass = `priority-${(req.priority || 'normal').toLowerCase()}`;
+                  const priorityKey = (req.priority || 'normal').toLowerCase();
 
                   return (
                     <tr key={req.id}>
+                      {/* 1. Request / Case Identity */}
                       <td>
-                        <div style={{ fontWeight: 700, color: '#0F172A' }}>{req.id}</div>
-                        <div style={{ display: 'flex', gap: '4px', marginTop: '2px' }}>
-                          <span className="svc-case-order-chip" title="Case Order raised by RWA/Residence">
+                        <div className="svc-id-cell">
+                          <span className="svc-id-text">{req.id}</span>
+                          <span
+                            className="svc-case-order-chip"
+                            title="Case Order raised by RWA/Residence"
+                          >
                             {req.caseOrderId || 'CASE-101'}
                           </span>
                         </div>
                       </td>
 
+                      {/* 2. Service Task with Classification Tag */}
                       <td>
-                        <span style={{ fontWeight: 600, color: '#475569' }}>
-                          {req.category || 'Technicians'}
+                        {(() => {
+                          const classification = getServiceClassification(req);
+                          return (
+                            <div className="svc-service-cell">
+                              <div className="svc-service-title-row">
+                                <span className="svc-service-name">{req.service}</span>
+                                <span
+                                  className={`svc-classification-tag tag-${classification.toLowerCase().replace(/\s+/g, '-')}`}
+                                  title={`Classified as: ${classification} (${req.category || 'Technicians'})`}
+                                >
+                                  {classification === 'Electrical' && <SlimZap size={11} strokeWidth={1.6} />}
+                                  {classification === 'Plumbing' && <SlimDroplet size={11} strokeWidth={1.6} />}
+                                  {classification === 'Cleaning' && <SlimSparkles size={11} strokeWidth={1.6} />}
+                                  {classification === 'Civil' && <SlimHammer size={11} strokeWidth={1.6} />}
+                                  {classification === 'Security' && <SlimShield size={11} strokeWidth={1.6} />}
+                                  <span>{classification}</span>
+                                </span>
+                              </div>
+                              <div
+                                className="svc-service-sub"
+                                title={req.caseTitle || req.description}
+                              >
+                                {req.caseTitle || req.description || '—'}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </td>
+
+                      {/* 3. Resident & Unit */}
+                      <td>
+                        <div className="svc-resident-cell">
+                          <div className="svc-avatar-circle">
+                            {getInitials(req.resident)}
+                          </div>
+                          <div className="svc-resident-info">
+                            <div className="svc-resident-name">
+                              {req.resident || 'Resident'}
+                            </div>
+                            <div className="svc-location-text">
+                              <SlimMapPin size={11} strokeWidth={1.5} />
+                              <span>
+                                {req.flatNo} · {req.apartment}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* 4. Assigned Specialist */}
+                      <td>
+                        <div className="svc-tech-cell">
+                          {req.technician && req.technician !== 'Unassigned' ? (
+                            <>
+                              <div className="svc-tech-name">
+                                {req.technician}
+                              </div>
+                              <span
+                                className="svc-work-order-chip"
+                                title="Agency Work Order"
+                              >
+                                {req.workOrderId || 'WO-101'}
+                              </span>
+                            </>
+                          ) : (
+                            <button
+                              type="button"
+                              className="svc-unassigned-badge"
+                              onClick={() => openAllocateModal(req)}
+                              title="Click to allocate specialist"
+                            >
+                              <SlimPlus size={12} strokeWidth={1.6} />
+                              <span>Assign Staff</span>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* 5. Priority */}
+                      <td>
+                        <span className={`svc-priority-dot-badge priority-${priorityKey}`}>
+                          <span className="svc-p-dot" />
+                          <span>{req.priority || 'Normal'}</span>
                         </span>
                       </td>
 
+                      {/* 6. Current Stage & Fast Selector */}
                       <td>
-                        <div style={{ fontWeight: 700, color: '#0F172A' }}>{req.service}</div>
-                        <div style={{ fontSize: '0.72rem', color: '#64748B' }}>
-                          {req.caseTitle || req.description?.slice(0, 34) || '—'}
-                        </div>
-                      </td>
-
-                      <td>
-                        <div style={{ fontWeight: 600 }}>{req.resident || 'Kavya'}</div>
-                        <div style={{ fontSize: '0.74rem', color: '#64748B' }}>
-                          {req.apartment} · {req.flatNo}
-                        </div>
-                      </td>
-
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontWeight: 700, color: '#2563EB' }}>
-                            {req.technician || 'Unassigned'}
-                          </span>
-                        </div>
-                        <div style={{ display: 'flex', gap: '4px', marginTop: '2px' }}>
-                          <span className="svc-work-order-chip" title="Agency Work Order managed by Lalitha">
-                            {req.workOrderId || 'WO-101'}
-                          </span>
-                        </div>
-                      </td>
-
-                      <td>
-                        <span className={`svc-priority-badge ${priorityClass}`}>
-                          {req.priority || 'Normal'}
-                        </span>
-                      </td>
-
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span className={`svc-stage-pill ${stageObj.pillClass}`}>
+                        <div className="svc-stage-cell">
+                          <span
+                            className={`svc-stage-pill ${stageObj.color}`}
+                            title={`Status: ${stageObj.label}`}
+                          >
                             ● {stageObj.label}
                           </span>
+
+                          {/* Slim quick stage transition */}
+                          <select
+                            className="svc-inline-stage-select"
+                            value={req.status}
+                            onChange={(e) => handleStageChange(req, e.target.value)}
+                            title="Quick transition stage"
+                            aria-label="Transition Stage"
+                          >
+                            {STAGES.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                Move: {s.label}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                         {req.status === 'On Hold' && req.holdReason && (
-                          <div style={{ fontSize: '0.68rem', color: '#BE123C', maxWidth: '140px', marginTop: '2px' }}>
-                            Reason: {req.holdReason}
+                          <div
+                            className="svc-hold-reason-tip"
+                            title={`On Hold Reason: ${req.holdReason}`}
+                          >
+                            <SlimAlertCircle size={11} strokeWidth={1.5} />
+                            <span>{req.holdReason}</span>
                           </div>
                         )}
                       </td>
 
+                      {/* 7. Action Icons (View, Allocate, Edit, Delete) */}
                       <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                          <select
-                            className="svc-filter-select"
-                            style={{ fontSize: '0.74rem', padding: '4px 6px' }}
-                            value={req.status}
-                            onChange={(e) => handleStageChange(req, e.target.value)}
-                            title="Quick transition stage"
-                          >
-                            {STAGES.map((s) => (
-                              <option key={s.id} value={s.id}>
-                                Move to: {s.label}
-                              </option>
-                            ))}
-                          </select>
-
+                        <div className="svc-actions-group">
                           <button
                             type="button"
-                            className="svc-btn-pill-secondary view-request-button"
-                            style={{ padding: '4px 10px', fontSize: '0.74rem' }}
+                            className="svc-action-icon-btn view-request-button"
+                            title="View Case Details"
+                            aria-label={`View ${req.id}`}
                             onClick={() => {
                               setSelectedRequest(req);
                               setModalTab('overview');
                             }}
                           >
-                            View
+                            <SlimEye size={15} strokeWidth={1.5} />
                           </button>
 
                           <button
                             type="button"
-                            className="svc-btn-pill-primary"
-                            style={{ padding: '4px 10px', fontSize: '0.74rem' }}
+                            className="svc-action-icon-btn svc-action-allocate"
+                            title="Allocate Specialist"
+                            aria-label="Allocate"
                             onClick={() => openAllocateModal(req)}
                           >
-                            Allocate
+                            <SlimUserCheck size={15} strokeWidth={1.5} />
+                            <span className="sr-only">Allocate</span>
                           </button>
 
                           <button
                             type="button"
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: '#94A3B8',
-                              cursor: 'pointer',
-                              padding: '4px',
-                            }}
+                            className="svc-action-icon-btn svc-action-edit"
                             title="Edit complaint"
+                            aria-label="Edit complaint"
                             onClick={() => openEditModal(req)}
                           >
-                            ✏️
+                            <SlimPencil size={14} strokeWidth={1.5} />
                           </button>
 
                           <button
                             type="button"
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: '#EF4444',
-                              cursor: 'pointer',
-                              padding: '4px',
-                            }}
+                            className="svc-action-icon-btn svc-action-delete"
                             title="Delete complaint"
+                            aria-label="Delete complaint"
                             onClick={() => setDeletingRequestId(req.id)}
                           >
-                            🗑️
+                            <SlimTrash size={14} strokeWidth={1.5} />
                           </button>
                         </div>
                       </td>
@@ -601,8 +869,24 @@ export default function Services({
 
                 {filteredRequests.length === 0 && (
                   <tr>
-                    <td colSpan={8} style={{ textAlign: 'center', padding: '36px 20px', color: '#64748B' }}>
-                      No work cases match these filters. Tap &quot;+ Raise Complaint / Case Order&quot; to create one.
+                    <td colSpan={7} className="svc-table-empty">
+                      <div className="svc-empty-content">
+                        <SlimServices size={28} strokeWidth={1.2} />
+                        <h4>No matching service cases</h4>
+                        <p>Try refining your search query or reset filters.</p>
+                        <button
+                          type="button"
+                          className="svc-btn-pill-primary"
+                          style={{ marginTop: '8px' }}
+                          onClick={() => {
+                            setSelectedCategory('All');
+                            setSelectedStage('All');
+                            setSearchQuery('');
+                          }}
+                        >
+                          Clear Filters
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -621,81 +905,108 @@ export default function Services({
             return (
               <div key={stg.id} className="svc-pipeline-column">
                 <div className="svc-column-header">
-                  <span className="svc-column-title">{stg.label}</span>
+                  <div className="svc-column-title-wrap">
+                    <span
+                      className="svc-column-dot"
+                      style={{ backgroundColor: stg.dotColor }}
+                    />
+                    <span className="svc-column-title">{stg.label}</span>
+                  </div>
                   <span className="svc-column-badge">{columnItems.length}</span>
                 </div>
 
-                {columnItems.map((req) => (
-                  <div
-                    key={req.id}
-                    className="svc-kanban-card"
-                    onClick={() => {
-                      setSelectedRequest(req);
-                      setModalTab('overview');
-                    }}
-                  >
-                    <div className="svc-card-top-meta">
-                      <span className="svc-case-order-chip">{req.caseOrderId || 'CASE-101'}</span>
-                      <span className={`svc-priority-badge priority-${(req.priority || 'normal').toLowerCase()}`}>
-                        {req.priority || 'Normal'}
-                      </span>
-                    </div>
-
-                    <h4 className="svc-card-title">{req.service}</h4>
-                    <div className="svc-card-resident">
-                      👤 {req.resident || 'Kavya'} · {req.flatNo} ({req.apartment})
-                    </div>
-
-                    <div className="svc-card-footer">
-                      <span className="svc-tech-name-chip">
-                        🛠️ {req.technician || 'Unallocated'}
-                      </span>
-                      <button
-                        type="button"
-                        className="svc-btn-pill-primary"
-                        style={{ padding: '2px 8px', fontSize: '0.7rem' }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openAllocateModal(req);
-                        }}
-                      >
-                        Allocate
-                      </button>
-                    </div>
-
-                    {/* Quick stage mover */}
+                <div className="svc-column-cards">
+                  {columnItems.map((req) => (
                     <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        marginTop: '4px',
-                        paddingTop: '4px',
-                        borderTop: '1px dashed #E2E8F0',
+                      key={req.id}
+                      className="svc-kanban-card"
+                      onClick={() => {
+                        setSelectedRequest(req);
+                        setModalTab('overview');
                       }}
-                      onClick={(e) => e.stopPropagation()}
                     >
-                      <span style={{ fontSize: '0.68rem', color: '#64748B' }}>Move stage:</span>
-                      <select
-                        style={{ fontSize: '0.7rem', padding: '2px 4px', borderRadius: '4px', border: '1px solid #CBD5E1' }}
-                        value={req.status}
-                        onChange={(e) => handleStageChange(req, e.target.value)}
-                      >
-                        {STAGES.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                ))}
+                      <div className="svc-card-top-meta">
+                        <span className="svc-case-order-chip">
+                          {req.caseOrderId || 'CASE-101'}
+                        </span>
+                        {(() => {
+                          const classification = getServiceClassification(req);
+                          return (
+                            <span
+                              className={`svc-classification-tag tag-${classification.toLowerCase().replace(/\s+/g, '-')}`}
+                            >
+                              {classification === 'Electrical' && <SlimZap size={10} strokeWidth={1.5} />}
+                              {classification === 'Plumbing' && <SlimDroplet size={10} strokeWidth={1.5} />}
+                              {classification === 'Cleaning' && <SlimSparkles size={10} strokeWidth={1.5} />}
+                              {classification === 'Civil' && <SlimHammer size={10} strokeWidth={1.5} />}
+                              {classification === 'Security' && <SlimShield size={10} strokeWidth={1.5} />}
+                              <span>{classification}</span>
+                            </span>
+                          );
+                        })()}
+                        <span
+                          className={`svc-priority-dot-badge priority-${(
+                            req.priority || 'normal'
+                          ).toLowerCase()}`}
+                        >
+                          <span className="svc-p-dot" />
+                          <span>{req.priority || 'Normal'}</span>
+                        </span>
+                      </div>
 
-                {columnItems.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '40px 10px', color: '#94A3B8', fontSize: '0.78rem' }}>
-                    No requests in {stg.label}
-                  </div>
-                )}
+                      <h4 className="svc-card-title">{req.service}</h4>
+
+                      <div className="svc-card-resident">
+                        <SlimMapPin size={12} strokeWidth={1.5} />
+                        <span>
+                          {req.resident || 'Resident'} · {req.flatNo} ({req.apartment})
+                        </span>
+                      </div>
+
+                      <div className="svc-card-footer">
+                        <span className="svc-tech-name-chip">
+                          <SlimWrench size={12} strokeWidth={1.5} />
+                          <span>{req.technician || 'Unallocated'}</span>
+                        </span>
+                        <button
+                          type="button"
+                          className="svc-card-allocate-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openAllocateModal(req);
+                          }}
+                        >
+                          Allocate
+                        </button>
+                      </div>
+
+                      {/* Quick stage mover */}
+                      <div
+                        className="svc-card-stage-switch"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <span className="svc-card-stage-label">Move stage:</span>
+                        <select
+                          className="svc-card-stage-select"
+                          value={req.status}
+                          onChange={(e) => handleStageChange(req, e.target.value)}
+                        >
+                          {STAGES.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+
+                  {columnItems.length === 0 && (
+                    <div className="svc-column-empty">
+                      No cases in {stg.label}
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -709,7 +1020,7 @@ export default function Services({
             <div className="svc-modal-header">
               <div>
                 <span className="svc-modal-eyebrow">
-                  {selectedRequest.category} · {selectedRequest.caseOrderId || 'CASE-ORDER'}
+                  {selectedRequest.category || 'Technicians'} · {selectedRequest.caseOrderId || 'CASE-ORDER'}
                 </span>
                 <h3 className="svc-modal-title">
                   {selectedRequest.id}: {selectedRequest.service}
@@ -719,33 +1030,31 @@ export default function Services({
                 type="button"
                 className="svc-modal-close"
                 onClick={() => setSelectedRequest(null)}
+                aria-label="Close"
               >
-                ✕
+                <SlimX size={16} strokeWidth={1.5} />
               </button>
             </div>
 
             {/* Modal Tabs */}
-            <div style={{ display: 'flex', gap: '6px', padding: '8px 22px 0', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', overflowX: 'auto' }}>
+            <div className="svc-modal-tabs-strip">
               <button
                 type="button"
-                className={`svc-category-tab ${modalTab === 'overview' ? 'active' : ''}`}
-                style={{ padding: '6px 14px', fontSize: '0.78rem' }}
+                className={`svc-modal-tab-btn ${modalTab === 'overview' ? 'active' : ''}`}
                 onClick={() => setModalTab('overview')}
               >
                 Overview
               </button>
               <button
                 type="button"
-                className={`svc-category-tab ${modalTab === 'hierarchy' ? 'active' : ''}`}
-                style={{ padding: '6px 14px', fontSize: '0.78rem' }}
+                className={`svc-modal-tab-btn ${modalTab === 'hierarchy' ? 'active' : ''}`}
                 onClick={() => setModalTab('hierarchy')}
               >
                 Work Hierarchy (Diagram Flow)
               </button>
               <button
                 type="button"
-                className={`svc-category-tab ${modalTab === 'allocation' ? 'active' : ''}`}
-                style={{ padding: '6px 14px', fontSize: '0.78rem' }}
+                className={`svc-modal-tab-btn ${modalTab === 'allocation' ? 'active' : ''}`}
                 onClick={() => setModalTab('allocation')}
               >
                 Allocation &amp; Notes
@@ -753,8 +1062,7 @@ export default function Services({
               {selectedRequest.category === 'Security' && (
                 <button
                   type="button"
-                  className={`svc-category-tab ${modalTab === 'security' ? 'active' : ''}`}
-                  style={{ padding: '6px 14px', fontSize: '0.78rem' }}
+                  className={`svc-modal-tab-btn ${modalTab === 'security' ? 'active' : ''}`}
                   onClick={() => setModalTab('security')}
                 >
                   Permission / Approval Specs
@@ -766,26 +1074,37 @@ export default function Services({
               {/* TAB 1: OVERVIEW */}
               {modalTab === 'overview' && (
                 <>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '10px', borderBottom: '1px solid #F1F5F9' }}>
-                    <span className={`svc-stage-pill ${STAGES.find((s) => s.id === selectedRequest.status)?.pillClass || 'pill-pending'}`}>
+                  <div className="svc-modal-status-bar">
+                    <span
+                      className={`svc-stage-pill ${
+                        STAGES.find((s) => s.id === selectedRequest.status)?.color || 'stage-pending'
+                      }`}
+                    >
                       ● Stage: {selectedRequest.status}
                     </span>
-                    <span className={`svc-priority-badge priority-${(selectedRequest.priority || 'normal').toLowerCase()}`}>
-                      Priority: {selectedRequest.priority || 'Normal'}
+                    <span
+                      className={`svc-priority-dot-badge priority-${(
+                        selectedRequest.priority || 'normal'
+                      ).toLowerCase()}`}
+                    >
+                      <span className="svc-p-dot" />
+                      <span>Priority: {selectedRequest.priority || 'Normal'}</span>
                     </span>
                   </div>
 
                   <div className="svc-form-row-2">
                     <div className="svc-form-group">
                       <label>Case Order (Raised by RWA / Residence)</label>
-                      <div style={{ fontWeight: 700, color: '#2563EB' }}>
-                        {selectedRequest.caseOrderId || 'CASE-2026-041'} — {selectedRequest.caseTitle || selectedRequest.service}
+                      <div className="svc-field-value-primary">
+                        {selectedRequest.caseOrderId || 'CASE-2026-041'} —{' '}
+                        {selectedRequest.caseTitle || selectedRequest.service}
                       </div>
                     </div>
                     <div className="svc-form-group">
                       <label>Agency Work Order (Lalitha)</label>
-                      <div style={{ fontWeight: 700, color: '#7C3AED' }}>
-                        {selectedRequest.workOrderId || 'WO-041-A'} — {selectedRequest.workOrderTitle || 'Standard Dispatch'}
+                      <div className="svc-field-value-purple">
+                        {selectedRequest.workOrderId || 'WO-041-A'} —{' '}
+                        {selectedRequest.workOrderTitle || 'Standard Dispatch'}
                       </div>
                     </div>
                   </div>
@@ -793,32 +1112,36 @@ export default function Services({
                   <div className="svc-form-row-2">
                     <div className="svc-form-group">
                       <label>Resident / Originator</label>
-                      <div style={{ fontWeight: 700 }}>{selectedRequest.resident || 'Kavya Sharma'}</div>
-                      <div style={{ fontSize: '0.76rem', color: '#64748B' }}>
+                      <div className="svc-field-value-text">
+                        {selectedRequest.resident || 'Resident'}
+                      </div>
+                      <div className="svc-field-sub">
                         {selectedRequest.apartment} · Flat {selectedRequest.flatNo}
                       </div>
                     </div>
                     <div className="svc-form-group">
                       <label>Allocated Technician</label>
-                      <div style={{ fontWeight: 700, color: '#059669' }}>
-                        {selectedRequest.technician || 'Unassigned'} ({selectedRequest.technicianId || 'Pending'})
+                      <div className="svc-field-value-green">
+                        {selectedRequest.technician || 'Unassigned'} (
+                        {selectedRequest.technicianId || 'Pending'})
                       </div>
-                      <div style={{ fontSize: '0.76rem', color: '#64748B' }}>
-                        Assigned: {selectedRequest.assignedDate} · Target: {selectedRequest.targetDate}
+                      <div className="svc-field-sub">
+                        Assigned: {selectedRequest.assignedDate} · Target:{' '}
+                        {selectedRequest.targetDate}
                       </div>
                     </div>
                   </div>
 
                   <div className="svc-form-group">
                     <label>Complaint &amp; Task Description</label>
-                    <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '12px', borderRadius: '8px', fontSize: '0.84rem', lineHeight: 1.45 }}>
+                    <div className="svc-desc-box">
                       {selectedRequest.description || 'No detailed description provided.'}
                     </div>
                   </div>
 
                   {selectedRequest.status === 'On Hold' && selectedRequest.holdReason && (
-                    <div style={{ background: '#FFF1F2', border: '1.5px solid #FECDD3', padding: '12px', borderRadius: '8px', color: '#9F1239' }}>
-                      <strong>⚠️ On-Hold Reason:</strong> {selectedRequest.holdReason}
+                    <div className="svc-hold-banner">
+                      <strong>On-Hold Reason:</strong> {selectedRequest.holdReason}
                     </div>
                   )}
                 </>
@@ -827,33 +1150,41 @@ export default function Services({
               {/* TAB 2: HIERARCHY (USER DIAGRAM ALIGNMENT) */}
               {modalTab === 'hierarchy' && (
                 <div className="svc-hierarchy-tree-card">
-                  <h4 style={{ margin: '0 0 12px', fontSize: '0.92rem', color: '#0F172A' }}>
+                  <h4 className="svc-hierarchy-title">
                     Complete Workflow Chain (As per Architecture Diagram)
                   </h4>
 
                   <div className="svc-flow-node">
-                    <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 800 }}>STEP 1: CENTRAL ADMINISTRATION</div>
+                    <div className="svc-flow-step-tag">STEP 1: CENTRAL ADMINISTRATION</div>
                     <strong>Admin</strong> → Oversees agency policies and RWA federation approvals.
                   </div>
 
                   <div className="svc-flow-node">
-                    <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 800 }}>STEP 2: RWA &amp; RESIDENCE (CASE ORDER)</div>
+                    <div className="svc-flow-step-tag">STEP 2: RWA &amp; RESIDENCE (CASE ORDER)</div>
                     <strong>RWA</strong> &amp; <strong>Residence ({selectedRequest.resident || 'Resident'})</strong> raised Case Order:
                     <div style={{ marginTop: '4px' }}>
-                      <span className="svc-case-order-chip">{selectedRequest.caseOrderId || 'CASE-101'}</span>: {selectedRequest.caseTitle || selectedRequest.service}
+                      <span className="svc-case-order-chip">
+                        {selectedRequest.caseOrderId || 'CASE-101'}
+                      </span>
+                      : {selectedRequest.caseTitle || selectedRequest.service}
                     </div>
                   </div>
 
                   <div className="svc-flow-node">
-                    <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 800 }}>STEP 3: AGENCY DISPATCH (WORK ORDERS)</div>
+                    <div className="svc-flow-step-tag">STEP 3: AGENCY DISPATCH (WORK ORDERS)</div>
                     <strong>Agency</strong> broken Case Order into Work Orders:
                     <div style={{ marginTop: '4px' }}>
-                      <span className="svc-work-order-chip">{selectedRequest.workOrderId || 'WO-101-A'}</span>: {selectedRequest.workOrderTitle || 'Active execution'}
+                      <span className="svc-work-order-chip">
+                        {selectedRequest.workOrderId || 'WO-101-A'}
+                      </span>
+                      : {selectedRequest.workOrderTitle || 'Active execution'}
                     </div>
                   </div>
 
-                  <div className="svc-flow-node" style={{ borderColor: '#2563EB', background: '#F0F7FF' }}>
-                    <div style={{ fontSize: '0.7rem', color: '#2563EB', fontWeight: 800 }}>STEP 4: FIELD ALLOCATION (SERVICE REQUEST)</div>
+                  <div className="svc-flow-node svc-flow-node-active">
+                    <div className="svc-flow-step-tag" style={{ color: '#2563EB' }}>
+                      STEP 4: FIELD ALLOCATION (SERVICE REQUEST)
+                    </div>
                     <strong>Technicians ({selectedRequest.technician || 'Assigned Staff'})</strong> assigned Service Request:
                     <div style={{ marginTop: '4px', fontWeight: 700, color: '#1D4ED8' }}>
                       {selectedRequest.id}: {selectedRequest.service} (Status: {selectedRequest.status})
@@ -865,14 +1196,16 @@ export default function Services({
               {/* TAB 3: ALLOCATION & NOTES */}
               {modalTab === 'allocation' && (
                 <div className="svc-allocation-box">
-                  <h4 style={{ margin: 0, fontSize: '0.92rem' }}>Technician &amp; Work Allocation</h4>
+                  <h4 style={{ margin: 0, fontSize: '0.92rem' }}>
+                    Technician &amp; Work Allocation
+                  </h4>
                   <div className="svc-form-row-2">
                     <div>
-                      <span style={{ fontSize: '0.72rem', color: '#64748B', display: 'block' }}>Assigned Personnel</span>
+                      <span className="svc-field-sub">Assigned Personnel</span>
                       <strong>{selectedRequest.technician || 'Unassigned'}</strong>
                     </div>
                     <div>
-                      <span style={{ fontSize: '0.72rem', color: '#64748B', display: 'block' }}>Target Completion</span>
+                      <span className="svc-field-sub">Target Completion</span>
                       <strong>{selectedRequest.targetDate || '2026-10-25'}</strong>
                     </div>
                   </div>
@@ -893,9 +1226,9 @@ export default function Services({
 
               {/* TAB 4: SECURITY SPECS (DIAGRAM 2) */}
               {modalTab === 'security' && (
-                <div style={{ background: '#F8FAFC', border: '1.5px solid #E2E8F0', padding: '16px', borderRadius: '10px' }}>
-                  <h4 style={{ margin: '0 0 10px', fontSize: '0.92rem' }}>
-                    Security Gate &amp; Residence Workflow (Diagram 2)
+                <div className="svc-security-box">
+                  <h4 style={{ margin: '0 0 8px', fontSize: '0.92rem' }}>
+                    Security Gate &amp; Residence Workflow
                   </h4>
                   <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '0 0 12px' }}>
                     Security ↔ Permission Request / Approval Request ↔ Residence ({selectedRequest.resident})
@@ -954,8 +1287,9 @@ export default function Services({
                 type="button"
                 className="svc-modal-close"
                 onClick={() => setIsRaiseModalOpen(false)}
+                aria-label="Close"
               >
-                ✕
+                <SlimX size={16} strokeWidth={1.5} />
               </button>
             </div>
 
@@ -969,12 +1303,12 @@ export default function Services({
                       value={newComplaintForm.category}
                       onChange={(e) => {
                         const cat = e.target.value;
-                        const defaultSvc =
-                          cat === 'Security'
-                            ? 'Permission Request'
-                            : cat === 'Daily Works'
-                              ? 'Waste & Garbage Collection'
-                              : 'Electrical Repair';
+                        let defaultSvc = 'Electrical Repair';
+                        if (cat === 'Plumbing') defaultSvc = 'Plumbing';
+                        else if (cat === 'Cleaning') defaultSvc = 'Daily Housekeeping';
+                        else if (cat === 'Civil') defaultSvc = 'Civil Maintenance';
+                        else if (cat === 'Security') defaultSvc = 'Permission Request';
+                        else if (cat === 'Daily Works') defaultSvc = 'Waste & Garbage Collection';
                         setNewComplaintForm({
                           ...newComplaintForm,
                           category: cat,
@@ -982,15 +1316,19 @@ export default function Services({
                         });
                       }}
                     >
-                      <option value="Technicians">🛠️ Technicians</option>
-                      <option value="Security">🛡️ Security</option>
-                      <option value="Daily Works">🧹 Daily Works</option>
+                      <option value="Electrical">⚡ Electrical (Wiring, MCB, AC)</option>
+                      <option value="Plumbing">💧 Plumbing (Pumps, Pipes, Drainage)</option>
+                      <option value="Cleaning">✨ Cleaning (Housekeeping, Waste, Sanitation)</option>
+                      <option value="Civil">🔨 Civil &amp; Repairs (Seepage, Paint, Carpentry)</option>
+                      <option value="Security">🛡️ Security (Gate &amp; Visitor Pass)</option>
+                      <option value="Technicians">Technicians</option>
+                      <option value="Daily Works">Daily Works</option>
                     </select>
                   </div>
 
                   <div className="svc-form-group">
                     <label>Specific Service Subcategory *</label>
-                    {newComplaintForm.category === 'Technicians' ? (
+                    {newComplaintForm.category === 'Electrical' ? (
                       <select
                         className="svc-form-select"
                         value={newComplaintForm.service}
@@ -999,10 +1337,48 @@ export default function Services({
                         }
                       >
                         <option value="Electrical Repair">Electrical Repair</option>
-                        <option value="Plumbing">Plumbing</option>
-                        <option value="AC Maintenance">AC Maintenance</option>
-                        <option value="Civil Maintenance">Civil Maintenance</option>
-                        <option value="Painting">Painting</option>
+                        <option value="AC Maintenance">AC Maintenance &amp; Inverter Servicing</option>
+                        <option value="MCB Breaker Diagnostic">MCB Breaker Diagnostic &amp; Sparks</option>
+                        <option value="Switchboard & Earthing">Switchboard &amp; Earthing</option>
+                      </select>
+                    ) : newComplaintForm.category === 'Plumbing' ? (
+                      <select
+                        className="svc-form-select"
+                        value={newComplaintForm.service}
+                        onChange={(e) =>
+                          setNewComplaintForm({ ...newComplaintForm, service: e.target.value })
+                        }
+                      >
+                        <option value="Plumbing">Plumbing &amp; Leakage Repair</option>
+                        <option value="Booster Pump Service">Booster Pump Pressure &amp; Motor</option>
+                        <option value="Drainage Clog Clearing">Drainage &amp; Balcony Trap Clog</option>
+                        <option value="Water Supply Operations">Overhead Tank &amp; Inflow Check</option>
+                      </select>
+                    ) : newComplaintForm.category === 'Cleaning' ? (
+                      <select
+                        className="svc-form-select"
+                        value={newComplaintForm.service}
+                        onChange={(e) =>
+                          setNewComplaintForm({ ...newComplaintForm, service: e.target.value })
+                        }
+                      >
+                        <option value="Daily Housekeeping">Daily Housekeeping &amp; Floor Mopping</option>
+                        <option value="Waste & Garbage Collection">Waste &amp; Garbage Collection</option>
+                        <option value="Clubhouse & Pool Sanitization">Clubhouse &amp; Pool Sanitization</option>
+                        <option value="Deep Corridor Sanitization">Deep Corridor Sanitization</option>
+                      </select>
+                    ) : newComplaintForm.category === 'Civil' ? (
+                      <select
+                        className="svc-form-select"
+                        value={newComplaintForm.service}
+                        onChange={(e) =>
+                          setNewComplaintForm({ ...newComplaintForm, service: e.target.value })
+                        }
+                      >
+                        <option value="Civil Maintenance">Civil Maintenance &amp; Masonry</option>
+                        <option value="Parapet & Seepage Repair">Exterior Parapet Seepage &amp; Waterproofing</option>
+                        <option value="Painting Work">Touch-up Painting Work</option>
+                        <option value="Carpentry & Doors">Carpentry, Hinges &amp; Woodwork</option>
                       </select>
                     ) : newComplaintForm.category === 'Security' ? (
                       <select
@@ -1019,7 +1395,7 @@ export default function Services({
                         <option value="Permission Request">Permission Request (Delivery / Moves)</option>
                         <option value="Approval Request">Approval Request (Contractor / Vehicle)</option>
                       </select>
-                    ) : (
+                    ) : newComplaintForm.category === 'Daily Works' ? (
                       <select
                         className="svc-form-select"
                         value={newComplaintForm.service}
@@ -1030,8 +1406,20 @@ export default function Services({
                         <option value="Waste & Garbage Collection">Waste &amp; Garbage Collection</option>
                         <option value="Daily Housekeeping">Daily Housekeeping</option>
                         <option value="Water Supply Operations">Water Supply Operations</option>
-                        <option value="Landscaping & Gardening">Landscaping &amp; Gardening</option>
-                        <option value="Fire Hydrant Line Check">Fire Hydrant Line Check</option>
+                      </select>
+                    ) : (
+                      <select
+                        className="svc-form-select"
+                        value={newComplaintForm.service}
+                        onChange={(e) =>
+                          setNewComplaintForm({ ...newComplaintForm, service: e.target.value })
+                        }
+                      >
+                        <option value="Electrical Repair">Electrical Repair</option>
+                        <option value="Plumbing">Plumbing</option>
+                        <option value="AC Maintenance">AC Maintenance</option>
+                        <option value="Civil Maintenance">Civil Maintenance</option>
+                        <option value="Painting">Painting</option>
                       </select>
                     )}
                   </div>
@@ -1046,7 +1434,10 @@ export default function Services({
                     placeholder="e.g. Master Restroom Pipeline Pressure Failure"
                     value={newComplaintForm.caseTitle}
                     onChange={(e) =>
-                      setNewComplaintForm({ ...newComplaintForm, caseTitle: e.target.value })
+                      setNewComplaintForm({
+                        ...newComplaintForm,
+                        caseTitle: e.target.value,
+                      })
                     }
                   />
                 </div>
@@ -1060,7 +1451,10 @@ export default function Services({
                     placeholder="Describe problem severity, symptoms, and resident access times..."
                     value={newComplaintForm.description}
                     onChange={(e) =>
-                      setNewComplaintForm({ ...newComplaintForm, description: e.target.value })
+                      setNewComplaintForm({
+                        ...newComplaintForm,
+                        description: e.target.value,
+                      })
                     }
                   />
                 </div>
@@ -1072,7 +1466,10 @@ export default function Services({
                       className="svc-form-select"
                       value={newComplaintForm.raisedBy}
                       onChange={(e) =>
-                        setNewComplaintForm({ ...newComplaintForm, raisedBy: e.target.value })
+                        setNewComplaintForm({
+                          ...newComplaintForm,
+                          raisedBy: e.target.value,
+                        })
                       }
                     >
                       <option value="Residence">Residence (Resident / Tenant)</option>
@@ -1088,7 +1485,10 @@ export default function Services({
                       placeholder="e.g. Kavya Sharma"
                       value={newComplaintForm.resident}
                       onChange={(e) =>
-                        setNewComplaintForm({ ...newComplaintForm, resident: e.target.value })
+                        setNewComplaintForm({
+                          ...newComplaintForm,
+                          resident: e.target.value,
+                        })
                       }
                     />
                   </div>
@@ -1101,7 +1501,10 @@ export default function Services({
                       className="svc-form-select"
                       value={newComplaintForm.apartment}
                       onChange={(e) =>
-                        setNewComplaintForm({ ...newComplaintForm, apartment: e.target.value })
+                        setNewComplaintForm({
+                          ...newComplaintForm,
+                          apartment: e.target.value,
+                        })
                       }
                     >
                       <option value="Surya Enclave">Surya Enclave</option>
@@ -1120,7 +1523,10 @@ export default function Services({
                       placeholder="e.g. A-101"
                       value={newComplaintForm.flatNo}
                       onChange={(e) =>
-                        setNewComplaintForm({ ...newComplaintForm, flatNo: e.target.value })
+                        setNewComplaintForm({
+                          ...newComplaintForm,
+                          flatNo: e.target.value,
+                        })
                       }
                     />
                   </div>
@@ -1133,7 +1539,10 @@ export default function Services({
                       className="svc-form-select"
                       value={newComplaintForm.priority}
                       onChange={(e) =>
-                        setNewComplaintForm({ ...newComplaintForm, priority: e.target.value })
+                        setNewComplaintForm({
+                          ...newComplaintForm,
+                          priority: e.target.value,
+                        })
                       }
                     >
                       <option value="Low">Low</option>
@@ -1149,7 +1558,10 @@ export default function Services({
                       className="svc-form-select"
                       value={newComplaintForm.technicianId}
                       onChange={(e) =>
-                        setNewComplaintForm({ ...newComplaintForm, technicianId: e.target.value })
+                        setNewComplaintForm({
+                          ...newComplaintForm,
+                          technicianId: e.target.value,
+                        })
                       }
                     >
                       {technicians.map((t) => (
@@ -1185,7 +1597,7 @@ export default function Services({
           <div className="svc-modal" onClick={(e) => e.stopPropagation()}>
             <div className="svc-modal-header">
               <div>
-                <span className="svc-modal-eyebrow">WORK ORDER DISPATCH &amp; ALLOCATION</span>
+                <span className="svc-modal-eyebrow">WORK ORDER DISPATCH</span>
                 <h3 className="svc-modal-title">
                   Allocate: {allocatingRequest.id} ({allocatingRequest.service})
                 </h3>
@@ -1194,16 +1606,19 @@ export default function Services({
                 type="button"
                 className="svc-modal-close"
                 onClick={() => setIsAllocateModalOpen(false)}
+                aria-label="Close"
               >
-                ✕
+                <SlimX size={16} strokeWidth={1.5} />
               </button>
             </div>
 
             <form onSubmit={handleAllocateSubmit}>
               <div className="svc-modal-body">
-                <div style={{ background: '#F8FAFC', padding: '12px 14px', borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '0.82rem' }}>
-                  <strong>Linked Hierarchy:</strong> Case Order: <span className="svc-case-order-chip">{allocatingRequest.caseOrderId || 'CASE-101'}</span> → Agency Work Order: <span className="svc-work-order-chip">{allocatingRequest.workOrderId || 'WO-101-A'}</span>
-                  <div style={{ marginTop: '4px', color: '#64748B' }}>
+                <div className="svc-alloc-info-card">
+                  <div style={{ fontWeight: 600, color: '#0F172A', marginBottom: '4px' }}>
+                    Linked Work Order: <span className="svc-work-order-chip">{allocatingRequest.workOrderId || 'WO-101-A'}</span>
+                  </div>
+                  <div style={{ color: '#64748B', fontSize: '0.8rem' }}>
                     Resident: <strong>{allocatingRequest.resident}</strong> ({allocatingRequest.apartment} · {allocatingRequest.flatNo})
                   </div>
                 </div>
@@ -1214,7 +1629,10 @@ export default function Services({
                     className="svc-form-select"
                     value={allocationForm.technicianId}
                     onChange={(e) =>
-                      setAllocationForm({ ...allocationForm, technicianId: e.target.value })
+                      setAllocationForm({
+                        ...allocationForm,
+                        technicianId: e.target.value,
+                      })
                     }
                   >
                     {technicians.map((t) => (
@@ -1233,7 +1651,10 @@ export default function Services({
                       className="svc-form-input"
                       value={allocationForm.assignedDate}
                       onChange={(e) =>
-                        setAllocationForm({ ...allocationForm, assignedDate: e.target.value })
+                        setAllocationForm({
+                          ...allocationForm,
+                          assignedDate: e.target.value,
+                        })
                       }
                     />
                   </div>
@@ -1245,7 +1666,10 @@ export default function Services({
                       className="svc-form-input"
                       value={allocationForm.targetDate}
                       onChange={(e) =>
-                        setAllocationForm({ ...allocationForm, targetDate: e.target.value })
+                        setAllocationForm({
+                          ...allocationForm,
+                          targetDate: e.target.value,
+                        })
                       }
                     />
                   </div>
@@ -1258,7 +1682,10 @@ export default function Services({
                     className="svc-form-textarea"
                     value={allocationForm.instructions}
                     onChange={(e) =>
-                      setAllocationForm({ ...allocationForm, instructions: e.target.value })
+                      setAllocationForm({
+                        ...allocationForm,
+                        instructions: e.target.value,
+                      })
                     }
                   />
                 </div>
@@ -1284,25 +1711,33 @@ export default function Services({
       {/* ── MODAL 4: ON-HOLD REASON PROMPT ───────────────────────────────── */}
       {onHoldPromptRequest && (
         <div className="svc-modal-backdrop" onClick={() => setOnHoldPromptRequest(null)}>
-          <div className="svc-modal" style={{ maxWidth: '460px' }} onClick={(e) => e.stopPropagation()}>
+          <div
+            className="svc-modal"
+            style={{ maxWidth: '460px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="svc-modal-header">
               <div>
-                <span className="svc-modal-eyebrow" style={{ color: '#E11D48' }}>STAGE TRANSITION</span>
+                <span className="svc-modal-eyebrow" style={{ color: '#E11D48' }}>
+                  STAGE TRANSITION
+                </span>
                 <h3 className="svc-modal-title">Put Case On Hold</h3>
               </div>
               <button
                 type="button"
                 className="svc-modal-close"
                 onClick={() => setOnHoldPromptRequest(null)}
+                aria-label="Close"
               >
-                ✕
+                <SlimX size={16} strokeWidth={1.5} />
               </button>
             </div>
 
             <form onSubmit={handleConfirmOnHold}>
               <div className="svc-modal-body">
                 <p style={{ fontSize: '0.82rem', color: '#475569', margin: 0 }}>
-                  Specify the blocking reason for putting <strong>{onHoldPromptRequest.id}</strong> on hold:
+                  Specify the blocking reason for putting{' '}
+                  <strong>{onHoldPromptRequest.id}</strong> on hold:
                 </p>
 
                 <div className="svc-form-group">
@@ -1373,8 +1808,9 @@ export default function Services({
                 type="button"
                 className="svc-modal-close"
                 onClick={() => setIsEditModalOpen(false)}
+                aria-label="Close"
               >
-                ✕
+                <SlimX size={16} strokeWidth={1.5} />
               </button>
             </div>
 
@@ -1387,7 +1823,10 @@ export default function Services({
                     className="svc-form-input"
                     value={editingRequest.caseTitle || ''}
                     onChange={(e) =>
-                      setEditingRequest({ ...editingRequest, caseTitle: e.target.value })
+                      setEditingRequest({
+                        ...editingRequest,
+                        caseTitle: e.target.value,
+                      })
                     }
                   />
                 </div>
@@ -1399,7 +1838,10 @@ export default function Services({
                     className="svc-form-textarea"
                     value={editingRequest.description || ''}
                     onChange={(e) =>
-                      setEditingRequest({ ...editingRequest, description: e.target.value })
+                      setEditingRequest({
+                        ...editingRequest,
+                        description: e.target.value,
+                      })
                     }
                   />
                 </div>
@@ -1411,7 +1853,10 @@ export default function Services({
                       className="svc-form-select"
                       value={editingRequest.priority || 'Normal'}
                       onChange={(e) =>
-                        setEditingRequest({ ...editingRequest, priority: e.target.value })
+                        setEditingRequest({
+                          ...editingRequest,
+                          priority: e.target.value,
+                        })
                       }
                     >
                       <option value="Low">Low</option>
@@ -1428,7 +1873,10 @@ export default function Services({
                       className="svc-form-input"
                       value={editingRequest.targetDate || ''}
                       onChange={(e) =>
-                        setEditingRequest({ ...editingRequest, targetDate: e.target.value })
+                        setEditingRequest({
+                          ...editingRequest,
+                          targetDate: e.target.value,
+                        })
                       }
                     />
                   </div>
@@ -1455,20 +1903,28 @@ export default function Services({
       {/* ── MODAL 6: DELETE CONFIRMATION ─────────────────────────────────── */}
       {deletingRequestId && (
         <div className="svc-modal-backdrop" onClick={() => setDeletingRequestId(null)}>
-          <div className="svc-modal" style={{ maxWidth: '420px' }} onClick={(e) => e.stopPropagation()}>
+          <div
+            className="svc-modal"
+            style={{ maxWidth: '420px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="svc-modal-header">
-              <h3 className="svc-modal-title" style={{ color: '#E11D48' }}>Delete Complaint</h3>
+              <h3 className="svc-modal-title" style={{ color: '#E11D48' }}>
+                Delete Complaint
+              </h3>
               <button
                 type="button"
                 className="svc-modal-close"
                 onClick={() => setDeletingRequestId(null)}
+                aria-label="Close"
               >
-                ✕
+                <SlimX size={16} strokeWidth={1.5} />
               </button>
             </div>
             <div className="svc-modal-body">
               <p style={{ fontSize: '0.84rem', color: '#475569', margin: 0 }}>
-                Are you sure you want to permanently delete complaint <strong>{deletingRequestId}</strong>? This action cannot be undone.
+                Are you sure you want to permanently delete complaint{' '}
+                <strong>{deletingRequestId}</strong>? This action cannot be undone.
               </p>
             </div>
             <div className="svc-modal-footer">
