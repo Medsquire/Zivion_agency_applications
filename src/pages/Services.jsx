@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import './Services.css';
 import TableScrollSlider from '../components/TableScrollSlider';
+import AudioVoicePlayer from '../components/AudioVoicePlayer';
 import {
   SlimServices,
   SlimWrench,
@@ -11,12 +12,10 @@ import {
   SlimSliders,
   SlimTableView,
   SlimKanbanView,
-  SlimEye,
   SlimUserCheck,
   SlimPencil,
   SlimTrash,
   SlimPlus,
-  SlimArrowRight,
   SlimX,
   SlimMapPin,
   SlimAlertCircle,
@@ -24,7 +23,101 @@ import {
   SlimZap,
   SlimDroplet,
   SlimHammer,
+  SlimHeadphones,
+  SlimMic,
+  SlimUsers,
+  SlimActivity,
+  SlimImage,
+  SlimPackage,
+  SlimFileText,
+  SlimClock,
+  SlimCalendar,
 } from '../components/SlimIcons';
+
+// ── Helper to retrieve multiple technician assignments (so1-id, so2-id, so3-id) ──
+export function getAssignedTechs(req = {}) {
+  if (req.assignedTechnicians && Array.isArray(req.assignedTechnicians) && req.assignedTechnicians.length > 0) {
+    return req.assignedTechnicians;
+  }
+  if (req.technician && req.technician !== 'Unassigned') {
+    const rawWo = req.workOrderId || req.id || 'WO-101';
+    const num = rawWo.replace(/[^0-9]/g, '') || '101';
+    return [
+      {
+        soId: `SO-${num}-01`,
+        technicianId: req.technicianId || 'TECH-001',
+        name: req.technician,
+        skill: 'Field Specialist',
+        mobile: '+91 98765 00001',
+        role: 'Primary Specialist (Lead)',
+        assignedDate: req.assignedDate || '2026-10-22',
+        targetDate: req.targetDate || '2026-10-25',
+        status: req.status || 'In Progress',
+        instructions: `Execute service directive for ${req.service || 'work order'}.`,
+      },
+    ];
+  }
+  return [];
+}
+
+// ── Helper to retrieve inspection images for a request ──
+export function getRequestImages(req = {}) {
+  if (req.images && Array.isArray(req.images) && req.images.length > 0) {
+    return req.images;
+  }
+  const s = ((req.service || '') + ' ' + (req.caseTitle || '')).toLowerCase();
+  if (s.includes('electric') || s.includes('spark') || s.includes('power')) {
+    return [
+      'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=600&q=80',
+      'https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=600&q=80',
+    ];
+  }
+  if (s.includes('plumb') || s.includes('drain') || s.includes('pipe') || s.includes('pump')) {
+    return [
+      'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=600&q=80',
+    ];
+  }
+  if (s.includes('ac ') || s.includes('air') || s.includes('inverter')) {
+    return [
+      'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?auto=format&fit=crop&w=600&q=80',
+    ];
+  }
+  return [
+    'https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=600&q=80',
+  ];
+}
+
+// ── Helper to retrieve required materials checklist for a request ──
+export function getRequestMaterials(req = {}) {
+  if (req.materials && Array.isArray(req.materials) && req.materials.length > 0) {
+    return req.materials;
+  }
+  const s = ((req.service || '') + ' ' + (req.caseTitle || '')).toLowerCase();
+  if (s.includes('electric') || s.includes('spark') || s.includes('power')) {
+    return [
+      { id: 'm-1', name: '32A Double-Pole MCB (Schneider Electric)', qty: '1 unit', status: 'In Stock' },
+      { id: 'm-2', name: '2.5 sq mm Flame Retardant Copper Wire', qty: '8 meters', status: 'Issued to Tech' },
+      { id: 'm-3', name: 'Modular 6-Module Switchboard Box', qty: '1 pc', status: 'In Stock' },
+    ];
+  }
+  if (s.includes('plumb') || s.includes('drain') || s.includes('pipe') || s.includes('pump')) {
+    return [
+      { id: 'm-1', name: 'Balcony SS 304 Floor Drain Jali', qty: '1 pc', status: 'In Stock' },
+      { id: 'm-2', name: 'PVC Solvent Cement & Silicone Sealant', qty: '1 can', status: 'In Stock' },
+      { id: 'm-3', name: 'Heavy Duty Hydrojet Snake Hose', qty: '1 unit', status: 'Issued to Tech' },
+    ];
+  }
+  if (s.includes('ac ') || s.includes('air') || s.includes('inverter')) {
+    return [
+      { id: 'm-1', name: 'R32 Refrigerant Gas Canister', qty: '1 can (1.2 kg)', status: 'In Stock' },
+      { id: 'm-2', name: 'Condenser Coil Cleanser & Fin Comb', qty: '1 bottle', status: 'Used / Fitted' },
+    ];
+  }
+  return [
+    { id: 'm-1', name: 'High-Grade Elastomeric Polymer Sealant', qty: '2 buckets (5L)', status: 'To Procure' },
+    { id: 'm-2', name: 'Fiberglass Reinforcing Mesh 145g', qty: '1 roll (15m)', status: 'To Procure' },
+  ];
+}
 
 // ── Service Classifications (Cleaning, Electrical, Plumbing, Civil, Security, etc.) ────
 export const PRIMARY_CATEGORIES = [
@@ -146,6 +239,10 @@ export default function Services({
   const [allocatingRequest, setAllocatingRequest] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingRequest, setEditingRequest] = useState(null);
+  const [editModalTab, setEditModalTab] = useState('all'); // 'all' | 'inbound' | 'agency'
+  const [previewImage, setPreviewImage] = useState(null);
+  const [newMaterialInput, setNewMaterialInput] = useState({ name: '', qty: '', status: 'In Stock' });
+  const [newImageUrlInput, setNewImageUrlInput] = useState('');
   const [deletingRequestId, setDeletingRequestId] = useState(null);
   const [onHoldPromptRequest, setOnHoldPromptRequest] = useState(null);
   const [onHoldReasonInput, setOnHoldReasonInput] = useState('');
@@ -166,14 +263,42 @@ export default function Services({
     targetDate: '2026-10-25',
     securityPassType: 'Permission Request',
     dailyWorkFrequency: 'Daily',
+    hasAudioVoiceNote: true,
   });
 
-  // Form state for Allocation of Work
+  // Form state for Allocation of Work (Supporting 1, 2, or 3 Technicians with so1-id, so2-id, so3-id)
   const [allocationForm, setAllocationForm] = useState({
+    techCount: 1, // 1 | 2 | 3
     technicianId: 'TECH-001',
     assignedDate: new Date().toISOString().split('T')[0],
     targetDate: '2026-10-25',
     instructions: '',
+    slots: [
+      {
+        soId: 'SO-101-01',
+        technicianId: 'TECH-001',
+        role: 'Primary Specialist (Lead)',
+        instructions: '',
+        assignedDate: new Date().toISOString().split('T')[0],
+        targetDate: '2026-10-25',
+      },
+      {
+        soId: 'SO-101-02',
+        technicianId: 'TECH-002',
+        role: 'Co-Specialist / Assistant',
+        instructions: '',
+        assignedDate: new Date().toISOString().split('T')[0],
+        targetDate: '2026-10-25',
+      },
+      {
+        soId: 'SO-101-03',
+        technicianId: 'TECH-003',
+        role: 'Support / Safety Specialist',
+        instructions: '',
+        assignedDate: new Date().toISOString().split('T')[0],
+        targetDate: '2026-10-25',
+      },
+    ],
   });
 
   const showToast = (msg) => {
@@ -259,6 +384,8 @@ export default function Services({
     const techObj = technicians.find((t) => t.id === newComplaintForm.technicianId) || {
       name: 'Unassigned',
       id: '',
+      skill: 'General Maintenance',
+      mobile: '+91 98765 00001',
     };
 
     const nextNum = requests.length + 1001;
@@ -271,6 +398,22 @@ export default function Services({
     const newId = `${prefix}-${nextNum}`;
     const newCaseId = `CASE-2026-${String(nextNum).slice(-3)}`;
     const newWorkOrderId = `WO-${String(nextNum).slice(-3)}-A`;
+    const so1Id = `SO-${String(nextNum).slice(-3)}-01`;
+
+    const initialAssignedTechnicians = techObj.name !== 'Unassigned' ? [
+      {
+        soId: so1Id,
+        technicianId: techObj.id,
+        name: techObj.name,
+        skill: techObj.skill || 'Specialist',
+        mobile: techObj.mobile || '+91 98765 00001',
+        role: 'Primary Specialist (Lead)',
+        assignedDate: new Date().toISOString().split('T')[0],
+        targetDate: newComplaintForm.targetDate || '2026-10-25',
+        status: 'Received Request',
+        instructions: `Work Order ${newWorkOrderId}: Execute ${newComplaintForm.service}.`,
+      },
+    ] : [];
 
     const newReq = {
       id: newId,
@@ -294,6 +437,7 @@ export default function Services({
         (newComplaintForm.category === 'Daily Works' ? 'All Towers' : 'A-101'),
       technician: techObj.name,
       technicianId: techObj.id,
+      assignedTechnicians: initialAssignedTechnicians,
       assignedDate: new Date().toISOString().split('T')[0],
       targetDate: newComplaintForm.targetDate || '2026-10-25',
       priority: newComplaintForm.priority,
@@ -302,6 +446,47 @@ export default function Services({
       description: newComplaintForm.description,
       securityPassType: newComplaintForm.securityPassType,
       dailyWorkFrequency: newComplaintForm.dailyWorkFrequency,
+      audio: newComplaintForm.hasAudioVoiceNote
+        ? {
+            hasAudio: true,
+            title: `Resident Voice Memo: ${newComplaintForm.caseTitle}`,
+            duration: '0:35',
+            durationSeconds: 35,
+            sender: newComplaintForm.resident || 'Resident',
+            recordedAt: `Today ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+            sampleType: 'voice',
+          }
+        : null,
+      auditTrail: [
+        {
+          id: 1,
+          action: 'Case Order Created',
+          detail: `Resident registered case order ${newCaseId}`,
+          actor: newComplaintForm.resident || 'Resident',
+          timestamp: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          type: 'case',
+        },
+        ...(newComplaintForm.hasAudioVoiceNote
+          ? [
+              {
+                id: 2,
+                action: 'Audio Note Attached',
+                detail: 'Resident attached 35-second voice description',
+                actor: newComplaintForm.resident || 'Resident',
+                timestamp: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                type: 'audio',
+              },
+            ]
+          : []),
+        {
+          id: 3,
+          action: 'Work Order Generated',
+          detail: `Agency prepared Work Order ${newWorkOrderId}`,
+          actor: 'Agency Central (Lalitha)',
+          timestamp: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          type: 'wo',
+        },
+      ],
     };
 
     setRequests([newReq, ...requests]);
@@ -320,40 +505,142 @@ export default function Services({
       targetDate: '2026-10-25',
       securityPassType: 'Permission Request',
       dailyWorkFrequency: 'Daily',
+      hasAudioVoiceNote: true,
     });
     showToast(`✓ Created Case Order ${newCaseId} & Service Request ${newId}`);
   };
 
-  // ── CRUD: Allocation of Work ─────────────────────────────────────────────
+  // ── CRUD: Allocation of Work Order to Technicians (so1-id, so2-id, so3-id) ──
   const openAllocateModal = (req) => {
     setAllocatingRequest(req);
+
+    const rawWo = req.workOrderId || req.id || 'WO-101';
+    const num = rawWo.replace(/[^0-9]/g, '') || '101';
+    const so1Id = `SO-${num}-01`;
+    const so2Id = `SO-${num}-02`;
+    const so3Id = `SO-${num}-03`;
+
+    const existingAssigned = getAssignedTechs(req);
+    const count = existingAssigned.length > 0 ? Math.min(3, existingAssigned.length) : 1;
+
+    const slots = [
+      {
+        soId: existingAssigned[0]?.soId || so1Id,
+        technicianId: existingAssigned[0]?.technicianId || req.technicianId || technicians[0]?.id || 'TECH-001',
+        role: existingAssigned[0]?.role || 'Primary Specialist (Lead)',
+        instructions: existingAssigned[0]?.instructions || `Work Order ${rawWo}: Lead execution of ${req.service} for Flat ${req.flatNo}.`,
+        assignedDate: existingAssigned[0]?.assignedDate || req.assignedDate || new Date().toISOString().split('T')[0],
+        targetDate: existingAssigned[0]?.targetDate || req.targetDate || '2026-10-25',
+      },
+      {
+        soId: existingAssigned[1]?.soId || so2Id,
+        technicianId: existingAssigned[1]?.technicianId || (technicians[1]?.id || 'TECH-002'),
+        role: existingAssigned[1]?.role || 'Co-Specialist / Assistant',
+        instructions: existingAssigned[1]?.instructions || `Work Order ${rawWo}: Assist with field repair and tooling.`,
+        assignedDate: existingAssigned[1]?.assignedDate || req.assignedDate || new Date().toISOString().split('T')[0],
+        targetDate: existingAssigned[1]?.targetDate || req.targetDate || '2026-10-25',
+      },
+      {
+        soId: existingAssigned[2]?.soId || so3Id,
+        technicianId: existingAssigned[2]?.technicianId || (technicians[2]?.id || 'TECH-003'),
+        role: existingAssigned[2]?.role || 'Support & Safety Specialist',
+        instructions: existingAssigned[2]?.instructions || `Work Order ${rawWo}: Safety isolation and final inspection.`,
+        assignedDate: existingAssigned[2]?.assignedDate || req.assignedDate || new Date().toISOString().split('T')[0],
+        targetDate: existingAssigned[2]?.targetDate || req.targetDate || '2026-10-25',
+      },
+    ];
+
     setAllocationForm({
-      technicianId: req.technicianId || 'TECH-001',
-      assignedDate: req.assignedDate || new Date().toISOString().split('T')[0],
-      targetDate: req.targetDate || '2026-10-25',
-      instructions: `Work Order ${req.workOrderId || req.id}: Execute ${req.service} for Flat ${req.flatNo}.`,
+      techCount: count,
+      technicianId: slots[0].technicianId,
+      assignedDate: slots[0].assignedDate,
+      targetDate: slots[0].targetDate,
+      instructions: slots[0].instructions,
+      slots,
     });
     setIsAllocateModalOpen(true);
+  };
+
+  const handleSlotChange = (index, field, value) => {
+    setAllocationForm((prev) => {
+      const updatedSlots = [...(prev.slots || [])];
+      if (updatedSlots[index]) {
+        updatedSlots[index] = { ...updatedSlots[index], [field]: value };
+      }
+      const sync = {};
+      if (index === 0) {
+        if (field === 'technicianId') sync.technicianId = value;
+        if (field === 'assignedDate') sync.assignedDate = value;
+        if (field === 'targetDate') sync.targetDate = value;
+        if (field === 'instructions') sync.instructions = value;
+      }
+      return {
+        ...prev,
+        ...sync,
+        slots: updatedSlots,
+      };
+    });
+  };
+
+  const handleTechCountChange = (count) => {
+    setAllocationForm((prev) => ({
+      ...prev,
+      techCount: count,
+    }));
   };
 
   const handleAllocateSubmit = (e) => {
     e.preventDefault();
     if (!allocatingRequest) return;
 
-    const techObj = technicians.find((t) => t.id === allocationForm.technicianId) || {
-      name: 'Unassigned',
-      id: '',
+    const count = allocationForm.techCount || 1;
+    const activeSlots = (allocationForm.slots || []).slice(0, count);
+
+    const newAssignedTechnicians = activeSlots.map((slot, idx) => {
+      const techObj = technicians.find((t) => t.id === slot.technicianId) || {
+        name: idx === 0 ? 'Lead Specialist' : `Specialist ${idx + 1}`,
+        id: slot.technicianId || `TECH-00${idx + 1}`,
+        skill: 'Field Maintenance',
+        mobile: `+91 98765 0000${idx + 1}`,
+      };
+      return {
+        soId: slot.soId || `SO-0${idx + 1}`,
+        technicianId: techObj.id,
+        name: techObj.name,
+        skill: techObj.skill,
+        mobile: techObj.mobile,
+        role: slot.role || (idx === 0 ? 'Primary Specialist (Lead)' : idx === 1 ? 'Co-Specialist / Assistant' : 'Support Specialist'),
+        instructions: slot.instructions || `Work Order ${allocatingRequest.workOrderId || allocatingRequest.id}: Execution directive`,
+        assignedDate: slot.assignedDate || allocationForm.assignedDate,
+        targetDate: slot.targetDate || allocationForm.targetDate,
+        status: 'In Progress',
+      };
+    });
+
+    const primaryTech = newAssignedTechnicians[0] || { name: 'Unassigned', technicianId: '' };
+    const allNames = newAssignedTechnicians.map((t) => t.name).join(', ');
+    const soIds = newAssignedTechnicians.map((t) => t.soId).join(', ');
+
+    const newAuditEntry = {
+      id: Date.now(),
+      action: 'Work Order Dispatched',
+      detail: `Assigned to ${count} Technician${count > 1 ? 's' : ''} (${newAssignedTechnicians.map((t) => `${t.soId}: ${t.name} [${t.role}]`).join(', ')})`,
+      actor: 'Agency Dispatcher (Lalitha)',
+      timestamp: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      type: 'dispatch',
     };
 
     const updated = requests.map((r) => {
       if (r.id === allocatingRequest.id) {
         return {
           ...r,
-          technician: techObj.name,
-          technicianId: techObj.id,
-          assignedDate: allocationForm.assignedDate,
-          targetDate: allocationForm.targetDate,
+          technician: allNames,
+          technicianId: primaryTech.technicianId,
+          assignedTechnicians: newAssignedTechnicians,
+          assignedDate: primaryTech.assignedDate,
+          targetDate: primaryTech.targetDate,
           status: r.status === 'Received Request' ? 'In Progress' : r.status,
+          auditTrail: [newAuditEntry, ...(r.auditTrail || [])],
         };
       }
       return r;
@@ -361,21 +648,25 @@ export default function Services({
 
     setRequests(updated);
     if (updateRequestField) {
-      updateRequestField(allocatingRequest.id, 'technician', techObj.name);
-      updateRequestField(allocatingRequest.id, 'technicianId', techObj.id);
+      updateRequestField(allocatingRequest.id, 'technician', allNames);
+      updateRequestField(allocatingRequest.id, 'technicianId', primaryTech.technicianId);
+      updateRequestField(allocatingRequest.id, 'assignedTechnicians', newAssignedTechnicians);
     }
     if (selectedRequest && selectedRequest.id === allocatingRequest.id) {
       setSelectedRequest({
         ...selectedRequest,
-        technician: techObj.name,
-        technicianId: techObj.id,
-        assignedDate: allocationForm.assignedDate,
-        targetDate: allocationForm.targetDate,
+        technician: allNames,
+        technicianId: primaryTech.technicianId,
+        assignedTechnicians: newAssignedTechnicians,
+        assignedDate: primaryTech.assignedDate,
+        targetDate: primaryTech.targetDate,
+        status: selectedRequest.status === 'Received Request' ? 'In Progress' : selectedRequest.status,
+        auditTrail: [newAuditEntry, ...(selectedRequest.auditTrail || [])],
       });
     }
 
     setIsAllocateModalOpen(false);
-    showToast(`✓ Allocated ${techObj.name} to ${allocatingRequest.id}`);
+    showToast(`✓ Dispatched ${allocatingRequest.workOrderId || allocatingRequest.id} to ${count} Technician${count > 1 ? 's' : ''} (${soIds})`);
   };
 
   // ── CRUD: Stage Transition ────────────────────────────────────────────────
@@ -431,25 +722,233 @@ export default function Services({
     showToast(`✓ Marked ${onHoldPromptRequest.id} On Hold`);
   };
 
-  // ── CRUD: Edit Complaint ──────────────────────────────────────────────────
+  // ── CRUD: Edit Complaint & Work Order Workflow ─────────────────────────────
   const openEditModal = (req) => {
-    setEditingRequest({ ...req });
+    const rawWo = req.workOrderId || req.id || 'WO-101';
+    const num = rawWo.replace(/[^0-9]/g, '') || '101';
+    const existingAssigned = getAssignedTechs(req);
+    const count = existingAssigned.length > 0 ? Math.min(3, Math.max(1, existingAssigned.length)) : 1;
+
+    const slots = [
+      {
+        soId: existingAssigned[0]?.soId || `SO-${num}-01`,
+        technicianId: existingAssigned[0]?.technicianId || req.technicianId || technicians[0]?.id || 'TECH-001',
+        role: existingAssigned[0]?.role || 'Primary Specialist (Lead)',
+        instructions: existingAssigned[0]?.instructions || `Work Order ${rawWo}: Lead execution of ${req.service} for Flat ${req.flatNo || 'Unit'}.`,
+        assignedDate: existingAssigned[0]?.assignedDate || req.assignedDate || new Date().toISOString().split('T')[0],
+        targetDate: existingAssigned[0]?.targetDate || req.targetDate || '2026-10-25',
+      },
+      {
+        soId: existingAssigned[1]?.soId || `SO-${num}-02`,
+        technicianId: existingAssigned[1]?.technicianId || (technicians[1]?.id || 'TECH-002'),
+        role: existingAssigned[1]?.role || 'Co-Specialist / Assistant',
+        instructions: existingAssigned[1]?.instructions || `Work Order ${rawWo}: Assist with field repair and tooling.`,
+        assignedDate: existingAssigned[1]?.assignedDate || req.assignedDate || new Date().toISOString().split('T')[0],
+        targetDate: existingAssigned[1]?.targetDate || req.targetDate || '2026-10-25',
+      },
+      {
+        soId: existingAssigned[2]?.soId || `SO-${num}-03`,
+        technicianId: existingAssigned[2]?.technicianId || (technicians[2]?.id || 'TECH-003'),
+        role: existingAssigned[2]?.role || 'Support & Safety Specialist',
+        instructions: existingAssigned[2]?.instructions || `Work Order ${rawWo}: Safety isolation and final inspection.`,
+        assignedDate: existingAssigned[2]?.assignedDate || req.assignedDate || new Date().toISOString().split('T')[0],
+        targetDate: existingAssigned[2]?.targetDate || req.targetDate || '2026-10-25',
+      },
+    ];
+
+    const initialImages = getRequestImages(req);
+    const initialMaterials = getRequestMaterials(req);
+
+    setEditingRequest({
+      ...req,
+      raisedBy: req.raisedBy || 'Residence',
+      resident: req.resident || 'Kavya Sharma',
+      residentPhone: req.residentPhone || '+91 98765 43210',
+      apartment: req.apartment || 'Surya Enclave',
+      tower: req.tower || (req.apartment?.includes('Sunrise') ? 'Tower B' : req.apartment?.includes('SKYLINE') ? 'Tower A' : 'Block A'),
+      flatNo: req.flatNo || 'A-101',
+      specificLocation: req.specificLocation || req.caseTitle || `${req.service} Execution Area`,
+      reportedDate: req.reportedDate || req.assignedDate || '2026-10-11',
+      reportedTime: req.reportedTime || '09:15',
+      targetDate: req.targetDate || '2026-10-25',
+      targetTime: req.targetTime || '17:00',
+      priority: req.priority || 'Normal',
+      caseTitle: req.caseTitle || req.service || 'Service Request',
+      description: req.description || '',
+      images: [...initialImages],
+      materials: [...initialMaterials],
+      materialNotes: req.materialNotes || '',
+      techCount: count,
+      slots,
+      status: req.status || 'In Progress',
+      holdReason: req.holdReason || '',
+      workOrderId: req.workOrderId || `WO-${num}-A`,
+      workOrderTitle: req.workOrderTitle || `${req.service} Resolution & Quality Check`,
+    });
+    setEditModalTab('all');
     setIsEditModalOpen(true);
+  };
+
+  const handleEditSlotChange = (index, field, value) => {
+    setEditingRequest((prev) => {
+      if (!prev) return prev;
+      const updatedSlots = [...(prev.slots || [])];
+      if (updatedSlots[index]) {
+        updatedSlots[index] = { ...updatedSlots[index], [field]: value };
+        if (field === 'technicianId') {
+          const techObj = technicians.find((t) => t.id === value);
+          if (techObj) {
+            updatedSlots[index].name = techObj.name;
+          }
+        }
+      }
+      return {
+        ...prev,
+        slots: updatedSlots,
+      };
+    });
+  };
+
+  const handleEditTechCountChange = (count) => {
+    setEditingRequest((prev) => (prev ? { ...prev, techCount: count } : prev));
+  };
+
+  const handleAddMaterialItem = () => {
+    if (!newMaterialInput.name.trim()) return;
+    setEditingRequest((prev) => {
+      if (!prev) return prev;
+      const newMat = {
+        id: `mat-${Date.now()}`,
+        name: newMaterialInput.name.trim(),
+        qty: newMaterialInput.qty.trim() || '1 pc',
+        status: newMaterialInput.status || 'In Stock',
+      };
+      return {
+        ...prev,
+        materials: [...(prev.materials || []), newMat],
+      };
+    });
+    setNewMaterialInput({ name: '', qty: '', status: 'In Stock' });
+  };
+
+  const handleRemoveMaterialItem = (matId) => {
+    setEditingRequest((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        materials: (prev.materials || []).filter((m) => m.id !== matId),
+      };
+    });
+  };
+
+  const handleMaterialStatusChange = (matId, status) => {
+    setEditingRequest((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        materials: (prev.materials || []).map((m) =>
+          m.id === matId ? { ...m, status } : m
+        ),
+      };
+    });
+  };
+
+  const handleAddImage = (url) => {
+    if (!url || !url.trim()) return;
+    setEditingRequest((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        images: [...(prev.images || []), url.trim()],
+      };
+    });
+    setNewImageUrlInput('');
+  };
+
+  const handleRemoveImage = (index) => {
+    setEditingRequest((prev) => {
+      if (!prev) return prev;
+      const updated = [...(prev.images || [])];
+      updated.splice(index, 1);
+      return {
+        ...prev,
+        images: updated,
+      };
+    });
   };
 
   const handleEditSubmit = (e) => {
     e.preventDefault();
     if (!editingRequest) return;
 
+    const count = editingRequest.techCount || 1;
+    const activeSlots = (editingRequest.slots || []).slice(0, count);
+
+    const newAssignedTechnicians = activeSlots.map((slot, idx) => {
+      const techObj = technicians.find((t) => t.id === slot.technicianId) || {
+        name: idx === 0 ? 'Lead Specialist' : `Specialist ${idx + 1}`,
+        id: slot.technicianId || `TECH-00${idx + 1}`,
+        skill: 'Field Maintenance',
+        mobile: `+91 98765 0000${idx + 1}`,
+      };
+      return {
+        soId: slot.soId || `SO-0${idx + 1}`,
+        technicianId: techObj.id,
+        name: techObj.name,
+        skill: techObj.skill,
+        mobile: techObj.mobile,
+        role: slot.role || (idx === 0 ? 'Primary Specialist (Lead)' : idx === 1 ? 'Co-Specialist / Assistant' : 'Support Specialist'),
+        instructions: slot.instructions || `Work Order ${editingRequest.workOrderId || editingRequest.id}: Execution directive`,
+        assignedDate: slot.assignedDate || editingRequest.assignedDate || new Date().toISOString().split('T')[0],
+        targetDate: slot.targetDate || editingRequest.targetDate,
+        status: editingRequest.status || 'In Progress',
+      };
+    });
+
+    const primaryTech = newAssignedTechnicians[0] || { name: 'Unassigned', technicianId: '' };
+    const allNames = newAssignedTechnicians.map((t) => t.name).join(', ');
+    const soIds = newAssignedTechnicians.map((t) => t.soId).join(', ');
+
+    const newAuditEntry = {
+      id: Date.now(),
+      action: 'Work Order & Case Updated',
+      detail: `Updated details: ${count} Specialist${count > 1 ? 's' : ''} assigned (${soIds}), ${editingRequest.materials?.length || 0} Materials listed, Stage moved to "${editingRequest.status}".`,
+      actor: 'Agency Central (Dispatcher)',
+      timestamp: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      type: 'dispatch',
+    };
+
+    const finalUpdatedRequest = {
+      ...editingRequest,
+      technician: allNames,
+      technicianId: primaryTech.technicianId,
+      assignedTechnicians: newAssignedTechnicians,
+      assignedDate: primaryTech.assignedDate,
+      targetDate: primaryTech.targetDate,
+      auditTrail: [newAuditEntry, ...(editingRequest.auditTrail || [])],
+    };
+
     const updated = requests.map((r) =>
-      r.id === editingRequest.id ? editingRequest : r
+      r.id === editingRequest.id ? finalUpdatedRequest : r
     );
     setRequests(updated);
+
+    if (updateRequestField) {
+      updateRequestField(editingRequest.id, 'technician', allNames);
+      updateRequestField(editingRequest.id, 'technicianId', primaryTech.technicianId);
+      updateRequestField(editingRequest.id, 'assignedTechnicians', newAssignedTechnicians);
+      updateRequestField(editingRequest.id, 'materials', editingRequest.materials);
+      updateRequestField(editingRequest.id, 'images', editingRequest.images);
+      updateRequestField(editingRequest.id, 'status', editingRequest.status);
+    }
+    if (updateRequestStatus && editingRequest.status) {
+      updateRequestStatus(editingRequest.id, editingRequest.status);
+    }
     if (selectedRequest && selectedRequest.id === editingRequest.id) {
-      setSelectedRequest(editingRequest);
+      setSelectedRequest(finalUpdatedRequest);
     }
     setIsEditModalOpen(false);
-    showToast(`✓ Saved updates for ${editingRequest.id}`);
+    showToast(`✓ Updated Case & Work Order ${editingRequest.id} (${count} Techs: ${soIds})`);
   };
 
   // ── CRUD: Delete / Close Complaint ────────────────────────────────────────
@@ -680,7 +1179,15 @@ export default function Services({
                     <tr key={req.id}>
                       {/* 1. Request / Case Identity */}
                       <td>
-                        <div className="svc-id-cell">
+                        <div
+                          className="svc-id-cell"
+                          style={{ cursor: 'pointer' }}
+                          title="View complaint & work order dossier"
+                          onClick={() => {
+                            setSelectedRequest(req);
+                            setModalTab('overview');
+                          }}
+                        >
                           <span className="svc-id-text">{req.id}</span>
                           <span
                             className="svc-case-order-chip"
@@ -742,32 +1249,50 @@ export default function Services({
                         </div>
                       </td>
 
-                      {/* 4. Assigned Specialist */}
+                      {/* 4. Assigned Specialist (Multi-Tech with so1-id, so2-id, so3-id) */}
                       <td>
                         <div className="svc-tech-cell">
-                          {req.technician && req.technician !== 'Unassigned' ? (
-                            <>
-                              <div className="svc-tech-name">
-                                {req.technician}
-                              </div>
-                              <span
-                                className="svc-work-order-chip"
-                                title="Agency Work Order"
+                          {(() => {
+                            const assigned = getAssignedTechs(req);
+                            if (assigned.length > 0) {
+                              return (
+                                <div className="svc-tech-multi-stack">
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
+                                    <span className="svc-work-order-chip" title="Linked Agency Work Order">
+                                      {req.workOrderId || 'WO-101'}
+                                    </span>
+                                    {assigned.length > 1 && (
+                                      <span className="svc-tech-count-chip" title={`${assigned.length} Technicians Assigned under this Work Order`}>
+                                        <SlimUsers size={10} /> {assigned.length} Techs
+                                      </span>
+                                    )}
+                                  </div>
+                                  {assigned.map((t, idx) => (
+                                    <div key={t.soId || idx} className="svc-tech-single-row">
+                                      <span
+                                        className={`svc-so-badge ${idx === 0 ? 'svc-so-badge-lead' : ''}`}
+                                        title={`Service Order ID (${idx === 0 ? 'so1-id' : idx === 1 ? 'so2-id' : 'so3-id'}): ${t.soId}`}
+                                      >
+                                        {t.soId}
+                                      </span>
+                                      <strong title={`${t.name} — ${t.role || t.skill}`}>{t.name}</strong>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            }
+                            return (
+                              <button
+                                type="button"
+                                className="svc-unassigned-badge"
+                                onClick={() => openAllocateModal(req)}
+                                title="Click to allocate technicians (1, 2, or 3 specialists)"
                               >
-                                {req.workOrderId || 'WO-101'}
-                              </span>
-                            </>
-                          ) : (
-                            <button
-                              type="button"
-                              className="svc-unassigned-badge"
-                              onClick={() => openAllocateModal(req)}
-                              title="Click to allocate specialist"
-                            >
-                              <SlimPlus size={12} strokeWidth={1.6} />
-                              <span>Assign Staff</span>
-                            </button>
-                          )}
+                                <SlimPlus size={12} strokeWidth={1.6} />
+                                <span>Assign Staff (SO-1/2/3)</span>
+                              </button>
+                            );
+                          })()}
                         </div>
                       </td>
 
@@ -779,7 +1304,7 @@ export default function Services({
                         </span>
                       </td>
 
-                      {/* 6. Current Stage & Fast Selector */}
+                      {/* 6. Current Stage */}
                       <td>
                         <div className="svc-stage-cell">
                           <span
@@ -788,21 +1313,6 @@ export default function Services({
                           >
                             ● {stageObj.label}
                           </span>
-
-                          {/* Slim quick stage transition */}
-                          <select
-                            className="svc-inline-stage-select"
-                            value={req.status}
-                            onChange={(e) => handleStageChange(req, e.target.value)}
-                            title="Quick transition stage"
-                            aria-label="Transition Stage"
-                          >
-                            {STAGES.map((s) => (
-                              <option key={s.id} value={s.id}>
-                                Move: {s.label}
-                              </option>
-                            ))}
-                          </select>
                         </div>
                         {req.status === 'On Hold' && req.holdReason && (
                           <div
@@ -815,33 +1325,9 @@ export default function Services({
                         )}
                       </td>
 
-                      {/* 7. Action Icons (View, Allocate, Edit, Delete) */}
+                      {/* 7. Action Icons (Edit) */}
                       <td style={{ textAlign: 'right' }}>
                         <div className="svc-actions-group">
-                          <button
-                            type="button"
-                            className="svc-action-icon-btn view-request-button"
-                            title="View Case Details"
-                            aria-label={`View ${req.id}`}
-                            onClick={() => {
-                              setSelectedRequest(req);
-                              setModalTab('overview');
-                            }}
-                          >
-                            <SlimEye size={15} strokeWidth={1.5} />
-                          </button>
-
-                          <button
-                            type="button"
-                            className="svc-action-icon-btn svc-action-allocate"
-                            title="Allocate Specialist"
-                            aria-label="Allocate"
-                            onClick={() => openAllocateModal(req)}
-                          >
-                            <SlimUserCheck size={15} strokeWidth={1.5} />
-                            <span className="sr-only">Allocate</span>
-                          </button>
-
                           <button
                             type="button"
                             className="svc-action-icon-btn svc-action-edit"
@@ -850,16 +1336,6 @@ export default function Services({
                             onClick={() => openEditModal(req)}
                           >
                             <SlimPencil size={14} strokeWidth={1.5} />
-                          </button>
-
-                          <button
-                            type="button"
-                            className="svc-action-icon-btn svc-action-delete"
-                            title="Delete complaint"
-                            aria-label="Delete complaint"
-                            onClick={() => setDeletingRequestId(req.id)}
-                          >
-                            <SlimTrash size={14} strokeWidth={1.5} />
                           </button>
                         </div>
                       </td>
@@ -963,8 +1439,40 @@ export default function Services({
                         </span>
                       </div>
 
+                      {/* Work Order & Audio Memo Row */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', margin: '6px 0 2px', flexWrap: 'wrap' }}>
+                        <span className="svc-work-order-chip" title="Linked Work Order">
+                          {req.workOrderId || 'WO-101'}
+                        </span>
+                        {req.audio && (
+                          <AudioVoicePlayer audio={req.audio} compact />
+                        )}
+                      </div>
+
+                      {/* Technicians & Service Orders (SO) */}
+                      {(() => {
+                        const assigned = getAssignedTechs(req);
+                        if (assigned.length > 0) {
+                          return (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', margin: '4px 0 8px' }}>
+                              {assigned.map((t, idx) => (
+                                <span
+                                  key={t.soId || idx}
+                                  className={`svc-so-badge ${idx === 0 ? 'svc-so-badge-lead' : ''}`}
+                                  title={`${t.soId}: ${t.name} (${t.role || t.skill})`}
+                                  style={{ fontSize: '0.67rem' }}
+                                >
+                                  {t.soId}: {t.name.split(' ')[0]}
+                                </span>
+                              ))}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+
                       <div className="svc-card-footer">
-                        <span className="svc-tech-name-chip">
+                        <span className="svc-tech-name-chip" title={req.technician}>
                           <SlimWrench size={12} strokeWidth={1.5} />
                           <span>{req.technician || 'Unallocated'}</span>
                         </span>
@@ -1020,7 +1528,7 @@ export default function Services({
             <div className="svc-modal-header">
               <div>
                 <span className="svc-modal-eyebrow">
-                  {selectedRequest.category || 'Technicians'} · {selectedRequest.caseOrderId || 'CASE-ORDER'}
+                  Work Order &amp; Complaint Dossier · {selectedRequest.category || 'Technicians'} · {selectedRequest.caseOrderId || 'CASE-ORDER'}
                 </span>
                 <h3 className="svc-modal-title">
                   {selectedRequest.id}: {selectedRequest.service}
@@ -1047,17 +1555,33 @@ export default function Services({
               </button>
               <button
                 type="button"
+                className={`svc-modal-tab-btn ${modalTab === 'audio' ? 'active' : ''}`}
+                onClick={() => setModalTab('audio')}
+              >
+                <SlimHeadphones size={13} style={{ marginRight: '5px' }} />
+                Voice &amp; Audio {selectedRequest.audio ? '(1)' : '(0)'}
+              </button>
+              <button
+                type="button"
                 className={`svc-modal-tab-btn ${modalTab === 'hierarchy' ? 'active' : ''}`}
                 onClick={() => setModalTab('hierarchy')}
               >
-                Work Hierarchy (Diagram Flow)
+                Workflow Hierarchy (WO → SO-1/2/3)
               </button>
               <button
                 type="button"
                 className={`svc-modal-tab-btn ${modalTab === 'allocation' ? 'active' : ''}`}
                 onClick={() => setModalTab('allocation')}
               >
-                Allocation &amp; Notes
+                Technicians ({getAssignedTechs(selectedRequest).length})
+              </button>
+              <button
+                type="button"
+                className={`svc-modal-tab-btn ${modalTab === 'audit' ? 'active' : ''}`}
+                onClick={() => setModalTab('audit')}
+              >
+                <SlimActivity size={13} style={{ marginRight: '5px' }} />
+                Audit Trail ({(selectedRequest.auditTrail || []).length})
               </button>
               {selectedRequest.category === 'Security' && (
                 <button
@@ -1101,7 +1625,7 @@ export default function Services({
                       </div>
                     </div>
                     <div className="svc-form-group">
-                      <label>Agency Work Order (Lalitha)</label>
+                      <label>Agency Work Order (WO)</label>
                       <div className="svc-field-value-purple">
                         {selectedRequest.workOrderId || 'WO-041-A'} —{' '}
                         {selectedRequest.workOrderTitle || 'Standard Dispatch'}
@@ -1120,19 +1644,85 @@ export default function Services({
                       </div>
                     </div>
                     <div className="svc-form-group">
-                      <label>Allocated Technician</label>
+                      <label>Assigned Personnel Summary</label>
                       <div className="svc-field-value-green">
-                        {selectedRequest.technician || 'Unassigned'} (
-                        {selectedRequest.technicianId || 'Pending'})
+                        {selectedRequest.technician || 'Unassigned'}
                       </div>
                       <div className="svc-field-sub">
-                        Assigned: {selectedRequest.assignedDate} · Target:{' '}
-                        {selectedRequest.targetDate}
+                        Target Completion: {selectedRequest.targetDate}
                       </div>
                     </div>
                   </div>
 
+                  {/* Audio Voice Complaint (Audios) */}
                   <div className="svc-form-group">
+                    <label>Resident Voice Complaint &amp; Audio Memo</label>
+                    <AudioVoicePlayer
+                      audio={selectedRequest.audio}
+                      onRecordNew={() => setModalTab('audio')}
+                    />
+                  </div>
+
+                  {/* Dispatched Service Orders (SO-1, SO-2, SO-3) Breakdown */}
+                  <div className="svc-form-group" style={{ marginTop: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <label style={{ margin: 0, fontWeight: 700, fontSize: '0.84rem', color: '#1E293B' }}>
+                        Dispatched Service Orders ({getAssignedTechs(selectedRequest).length} Technician{getAssignedTechs(selectedRequest).length > 1 ? 's' : ''} Assigned)
+                      </label>
+                      <button
+                        type="button"
+                        className="svc-btn-pill-secondary"
+                        style={{ padding: '3px 10px', fontSize: '0.74rem' }}
+                        onClick={() => {
+                          const r = selectedRequest;
+                          setSelectedRequest(null);
+                          openAllocateModal(r);
+                        }}
+                      >
+                        + Reallocate / Add Technicians (so1-id, so2-id, so3-id)
+                      </button>
+                    </div>
+
+                    {(() => {
+                      const assigned = getAssignedTechs(selectedRequest);
+                      if (assigned.length > 0) {
+                        return (
+                          <div className="svc-dossier-so-grid">
+                            {assigned.map((t, idx) => (
+                              <div key={t.soId || idx} className="svc-dossier-so-card">
+                                <div className="svc-dossier-so-header">
+                                  <span className={`svc-so-badge ${idx === 0 ? 'svc-so-badge-lead' : ''}`}>
+                                    {t.soId || `SO-0${idx + 1}`}
+                                  </span>
+                                  <span className="svc-stage-pill stage-in-progress" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
+                                    ● {t.status || 'In Progress'}
+                                  </span>
+                                </div>
+                                <div className="svc-dossier-so-name">{t.name}</div>
+                                <div className="svc-dossier-so-skill">{t.skill}</div>
+                                <span className="svc-dossier-so-role">{t.role || (idx === 0 ? 'Primary Specialist' : idx === 1 ? 'Co-Specialist' : 'Support Specialist')}</span>
+                                {t.instructions && (
+                                  <div style={{ fontSize: '0.73rem', color: '#475569', background: '#F8FAFC', padding: '6px 8px', borderRadius: '6px', marginTop: '4px' }}>
+                                    <strong>Task:</strong> {t.instructions}
+                                  </div>
+                                )}
+                                <a href={`tel:${t.mobile}`} className="svc-dossier-so-phone">
+                                  <SlimWrench size={12} /> {t.mobile}
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+                      return (
+                        <div className="svc-column-empty">
+                          No technicians assigned to this Work Order yet.
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  <div className="svc-form-group" style={{ marginTop: '12px' }}>
                     <label>Complaint &amp; Task Description</label>
                     <div className="svc-desc-box">
                       {selectedRequest.description || 'No detailed description provided.'}
@@ -1147,7 +1737,55 @@ export default function Services({
                 </>
               )}
 
-              {/* TAB 2: HIERARCHY (USER DIAGRAM ALIGNMENT) */}
+              {/* TAB 2: VOICE & AUDIO (AUDIOS) */}
+              {modalTab === 'audio' && (
+                <div className="svc-audio-tab-view">
+                  <h4 style={{ margin: '0 0 4px', fontSize: '0.98rem', color: '#0F172A' }}>
+                    Voice Memos &amp; Audio Attachments
+                  </h4>
+                  <p style={{ margin: '0 0 16px', fontSize: '0.8rem', color: '#64748B' }}>
+                    Audio recordings captured by residents during complaint registration and voice directives for field specialists.
+                  </p>
+
+                  <AudioVoicePlayer audio={selectedRequest.audio} />
+
+                  {/* Record Voice Directive for Technicians */}
+                  <div style={{ marginTop: '20px', padding: '16px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <SlimMic size={16} style={{ color: '#2563EB' }} />
+                      <strong style={{ fontSize: '0.86rem', color: '#1E293B' }}>
+                        Agency Field Directive: Voice Memo for Technicians
+                      </strong>
+                    </div>
+                    <p style={{ fontSize: '0.78rem', color: '#64748B', margin: '0 0 12px' }}>
+                      Dispatch an audio instruction to {selectedRequest.technician || 'assigned technicians'} (e.g. safety isolation, parking access instructions, or key handover location).
+                    </p>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        className="svc-btn-pill-primary"
+                        onClick={() => {
+                          showToast('🎙️ Voice directive recorded & transmitted to assigned technicians');
+                        }}
+                      >
+                        <SlimMic size={14} />
+                        <span>Record 30s Audio Directive</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="svc-btn-pill-secondary"
+                        onClick={() => {
+                          showToast('✓ Audio note downloaded for offline field dispatch');
+                        }}
+                      >
+                        Download WAV Audio
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: HIERARCHY (WO -> SO-1, SO-2, SO-3) */}
               {modalTab === 'hierarchy' && (
                 <div className="svc-hierarchy-tree-card">
                   <h4 className="svc-hierarchy-title">
@@ -1168,11 +1806,18 @@ export default function Services({
                       </span>
                       : {selectedRequest.caseTitle || selectedRequest.service}
                     </div>
+                    {selectedRequest.audio && (
+                      <div style={{ marginTop: '6px' }}>
+                        <span className="svc-audio-compact-pill" style={{ pointerEvents: 'none' }}>
+                          <SlimHeadphones size={11} /> Resident Audio Note Attached ({selectedRequest.audio.duration})
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="svc-flow-node">
-                    <div className="svc-flow-step-tag">STEP 3: AGENCY DISPATCH (WORK ORDERS)</div>
-                    <strong>Agency</strong> broken Case Order into Work Orders:
+                    <div className="svc-flow-step-tag">STEP 3: AGENCY DISPATCH (WORK ORDERS - WO)</div>
+                    <strong>Agency</strong> converts Case Order into Work Order:
                     <div style={{ marginTop: '4px' }}>
                       <span className="svc-work-order-chip">
                         {selectedRequest.workOrderId || 'WO-101-A'}
@@ -1183,25 +1828,54 @@ export default function Services({
 
                   <div className="svc-flow-node svc-flow-node-active">
                     <div className="svc-flow-step-tag" style={{ color: '#2563EB' }}>
-                      STEP 4: FIELD ALLOCATION (SERVICE REQUEST)
+                      STEP 4: FIELD TECHNICIAN ALLOCATION (SERVICE ORDERS - SO)
                     </div>
-                    <strong>Technicians ({selectedRequest.technician || 'Assigned Staff'})</strong> assigned Service Request:
-                    <div style={{ marginTop: '4px', fontWeight: 700, color: '#1D4ED8' }}>
-                      {selectedRequest.id}: {selectedRequest.service} (Status: {selectedRequest.status})
-                    </div>
+                    <strong>Agency Dispatched to Technicians:</strong>
+                    {(() => {
+                      const assigned = getAssignedTechs(selectedRequest);
+                      if (assigned.length > 0) {
+                        return (
+                          <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {assigned.map((t, idx) => (
+                              <div key={t.soId || idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem' }}>
+                                <span className={`svc-so-badge ${idx === 0 ? 'svc-so-badge-lead' : ''}`}>
+                                  {t.soId || `SO-0${idx + 1}`}
+                                </span>
+                                <strong>{t.name}</strong>
+                                <span style={{ color: '#64748B' }}>({t.role || t.skill})</span>
+                                <span className="svc-stage-pill stage-in-progress" style={{ fontSize: '0.67rem', padding: '1px 6px' }}>
+                                  {t.status || 'Active'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+                      return (
+                        <div style={{ marginTop: '4px', fontWeight: 600, color: '#EA580C' }}>
+                          Pending Allocation to Technicians (so1-id, so2-id, so3-id)
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               )}
 
-              {/* TAB 3: ALLOCATION & NOTES */}
+              {/* TAB 4: ALLOCATION & NOTES */}
               {modalTab === 'allocation' && (
                 <div className="svc-allocation-box">
-                  <h4 style={{ margin: 0, fontSize: '0.92rem' }}>
-                    Technician &amp; Work Allocation
-                  </h4>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h4 style={{ margin: 0, fontSize: '0.92rem' }}>
+                      Technicians &amp; Work Order Assignments
+                    </h4>
+                    <span className="svc-work-order-chip">
+                      {selectedRequest.workOrderId || 'WO-101-A'}
+                    </span>
+                  </div>
+
                   <div className="svc-form-row-2">
                     <div>
-                      <span className="svc-field-sub">Assigned Personnel</span>
+                      <span className="svc-field-sub">Technicians Assigned</span>
                       <strong>{selectedRequest.technician || 'Unassigned'}</strong>
                     </div>
                     <div>
@@ -1210,21 +1884,105 @@ export default function Services({
                     </div>
                   </div>
 
+                  {/* Multi-Tech Details */}
+                  {(() => {
+                    const assigned = getAssignedTechs(selectedRequest);
+                    if (assigned.length > 0) {
+                      return (
+                        <div style={{ marginTop: '8px' }}>
+                          <span className="svc-field-sub">Service Order Breakdown (so1-id, so2-id, so3-id):</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                            {assigned.map((t, idx) => (
+                              <div key={t.soId || idx} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', padding: '8px 12px', borderRadius: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span className={`svc-so-badge ${idx === 0 ? 'svc-so-badge-lead' : ''}`}>{t.soId}</span>
+                                    <strong style={{ fontSize: '0.84rem' }}>{t.name}</strong>
+                                    <span style={{ fontSize: '0.74rem', color: '#64748B' }}>({t.skill})</span>
+                                  </div>
+                                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#2563EB' }}>{t.role}</span>
+                                </div>
+                                <div style={{ fontSize: '0.76rem', color: '#475569' }}>
+                                  <strong>Directive:</strong> {t.instructions || 'Execute field repair.'}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+
                   <button
                     type="button"
                     className="svc-btn-pill-primary"
-                    style={{ alignSelf: 'flex-start', marginTop: '6px' }}
+                    style={{ alignSelf: 'flex-start', marginTop: '8px' }}
                     onClick={() => {
+                      const r = selectedRequest;
                       setSelectedRequest(null);
-                      openAllocateModal(selectedRequest);
+                      openAllocateModal(r);
                     }}
                   >
-                    Reassign / Reallocate Technician
+                    Reallocate / Assign 1, 2, or 3 Technicians
                   </button>
                 </div>
               )}
 
-              {/* TAB 4: SECURITY SPECS (DIAGRAM 2) */}
+              {/* TAB 5: AUDIT TRAIL & LOG (AUDITS) */}
+              {modalTab === 'audit' && (
+                <div className="svc-audit-tab-view">
+                  <h4 style={{ margin: '0 0 4px', fontSize: '0.98rem', color: '#0F172A' }}>
+                    Complete Audit Trail &amp; Dispatch History
+                  </h4>
+                  <p style={{ margin: '0 0 16px', fontSize: '0.8rem', color: '#64748B' }}>
+                    Immutable chronological record of Case Order creation, Audio recordings, Work Order dispatch, and Technician assignments.
+                  </p>
+
+                  <div className="svc-audit-timeline-container">
+                    {((selectedRequest.auditTrail && selectedRequest.auditTrail.length > 0)
+                      ? selectedRequest.auditTrail
+                      : [
+                          {
+                            id: 1,
+                            action: 'Case Order Created',
+                            detail: `Resident registered case order ${selectedRequest.caseOrderId || 'CASE-101'}`,
+                            actor: selectedRequest.resident || 'Resident',
+                            timestamp: selectedRequest.assignedDate || '2026-10-11',
+                            type: 'case',
+                          },
+                          {
+                            id: 2,
+                            action: 'Work Order Dispatched',
+                            detail: `Agency generated Work Order ${selectedRequest.workOrderId || 'WO-101'} and dispatched to ${selectedRequest.technician || 'Technician'}`,
+                            actor: 'Agency Central',
+                            timestamp: selectedRequest.assignedDate || '2026-10-11',
+                            type: 'dispatch',
+                          },
+                        ]
+                    ).map((audit, i, arr) => (
+                      <div key={audit.id || i} className="svc-audit-item">
+                        <div className="svc-audit-line-wrapper">
+                          <div className={`svc-audit-dot ${audit.type === 'dispatch' ? 'dot-dispatch' : audit.type === 'audio' ? 'dot-audio' : ''}`}>
+                            {audit.type === 'audio' ? <SlimHeadphones size={11} /> : audit.type === 'dispatch' ? <SlimUsers size={11} /> : <SlimActivity size={11} />}
+                          </div>
+                          {i < arr.length - 1 && <div className="svc-audit-line" />}
+                        </div>
+                        <div className="svc-audit-content">
+                          <div className="svc-audit-head">
+                            <span className="svc-audit-action-title">{audit.action}</span>
+                            <span className="svc-audit-time">{audit.timestamp}</span>
+                          </div>
+                          <div className="svc-audit-detail">{audit.detail}</div>
+                          <div className="svc-audit-actor">Actor: <strong>{audit.actor}</strong></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 6: SECURITY SPECS (DIAGRAM 2) */}
               {modalTab === 'security' && (
                 <div className="svc-security-box">
                   <h4 style={{ margin: '0 0 8px', fontSize: '0.92rem' }}>
@@ -1594,10 +2352,10 @@ export default function Services({
       {/* ── MODAL 3: ALLOCATION OF WORK ──────────────────────────────────── */}
       {isAllocateModalOpen && allocatingRequest && (
         <div className="svc-modal-backdrop" onClick={() => setIsAllocateModalOpen(false)}>
-          <div className="svc-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="svc-modal" style={{ maxWidth: '680px' }} onClick={(e) => e.stopPropagation()}>
             <div className="svc-modal-header">
               <div>
-                <span className="svc-modal-eyebrow">WORK ORDER DISPATCH</span>
+                <span className="svc-modal-eyebrow">WORK ORDER DISPATCH (WO → SO-1 / SO-2 / SO-3)</span>
                 <h3 className="svc-modal-title">
                   Allocate: {allocatingRequest.id} ({allocatingRequest.service})
                 </h3>
@@ -1614,80 +2372,151 @@ export default function Services({
 
             <form onSubmit={handleAllocateSubmit}>
               <div className="svc-modal-body">
+                {/* Linked Work Order Info Card & Audio Preview */}
                 <div className="svc-alloc-info-card">
-                  <div style={{ fontWeight: 600, color: '#0F172A', marginBottom: '4px' }}>
-                    Linked Work Order: <span className="svc-work-order-chip">{allocatingRequest.workOrderId || 'WO-101-A'}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <div style={{ fontWeight: 600, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      Linked Work Order: <span className="svc-work-order-chip">{allocatingRequest.workOrderId || 'WO-101-A'}</span>
+                    </div>
+                    <span style={{ fontSize: '0.72rem', color: '#64748B', fontFamily: 'monospace' }}>
+                      Case: {allocatingRequest.caseOrderId || allocatingRequest.id}
+                    </span>
                   </div>
-                  <div style={{ color: '#64748B', fontSize: '0.8rem' }}>
-                    Resident: <strong>{allocatingRequest.resident}</strong> ({allocatingRequest.apartment} · {allocatingRequest.flatNo})
+                  <div style={{ color: '#475569', fontSize: '0.8rem', marginBottom: allocatingRequest.audio ? '10px' : '0' }}>
+                    Resident: <strong>{allocatingRequest.resident}</strong> ({allocatingRequest.apartment} · {allocatingRequest.flatNo}) · Issue: <em>{allocatingRequest.caseTitle || allocatingRequest.service}</em>
+                  </div>
+
+                  {/* Audio Voice Note Preview if present */}
+                  {allocatingRequest.audio && (
+                    <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #CBD5E1' }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#334155', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <SlimHeadphones size={13} strokeWidth={2} style={{ color: '#2563EB' }} />
+                        Resident Voice Note / Audio Complaint:
+                      </div>
+                      <AudioVoicePlayer audio={allocatingRequest.audio} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Number of Technicians Selector (1, 2, or 3) */}
+                <div className="svc-alloc-count-container">
+                  <div className="svc-alloc-count-header">
+                    <label>
+                      <SlimUsers size={14} strokeWidth={2} style={{ verticalAlign: 'text-bottom', marginRight: '6px', color: '#2563EB' }} />
+                      Number of Technicians Needed
+                    </label>
+                    <span style={{ fontSize: '0.74rem', color: '#64748B' }}>
+                      Creates individual Service Orders (so1-id, so2-id, so3-id)
+                    </span>
+                  </div>
+                  <div className="svc-alloc-count-pills">
+                    {[1, 2, 3].map((num) => {
+                      const isActive = (allocationForm.techCount || 1) === num;
+                      const label =
+                        num === 1
+                          ? '1 Technician (Solo Lead)'
+                          : num === 2
+                          ? '2 Technicians (Lead + Co-Tech)'
+                          : '3 Technicians (Lead + Assist + Safety)';
+                      return (
+                        <button
+                          key={num}
+                          type="button"
+                          className={`svc-alloc-count-btn ${isActive ? 'active' : ''}`}
+                          onClick={() => handleTechCountChange(num)}
+                        >
+                          <span style={{ fontWeight: 800 }}>{num}</span>
+                          <span>{label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div className="svc-form-group">
-                  <label>Select Technician / Agency Staff *</label>
-                  <select
-                    className="svc-form-select"
-                    value={allocationForm.technicianId}
-                    onChange={(e) =>
-                      setAllocationForm({
-                        ...allocationForm,
-                        technicianId: e.target.value,
-                      })
-                    }
-                  >
-                    {technicians.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name} — {t.skill} ({t.mobile})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {/* Dynamic Technician Slot Cards */}
+                <div className="svc-alloc-slots-grid">
+                  {(allocationForm.slots || []).slice(0, allocationForm.techCount || 1).map((slot, idx) => {
+                    const isLead = idx === 0;
+                    const defaultRole = isLead
+                      ? 'Primary Specialist (Lead)'
+                      : idx === 1
+                      ? 'Co-Specialist / Assistant'
+                      : 'Support & Safety Specialist';
+                    return (
+                      <div key={idx} className="svc-alloc-tech-slot-card">
+                        <div className="svc-alloc-slot-header">
+                          <div className="svc-alloc-slot-badge-group">
+                            <span className={`svc-so-badge ${isLead ? 'svc-so-badge-lead' : ''}`}>
+                              {slot.soId || `SO-0${idx + 1}`}
+                            </span>
+                            <span className="svc-alloc-slot-title">
+                              {isLead
+                                ? 'Technician 1 · Primary Specialist (Lead)'
+                                : idx === 1
+                                ? 'Technician 2 · Co-Specialist / Assistant'
+                                : 'Technician 3 · Support & Safety Specialist'}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600 }}>
+                            {isLead ? 'Direct Accountable' : 'Collaborative SO'}
+                          </span>
+                        </div>
 
-                <div className="svc-form-row-2">
-                  <div className="svc-form-group">
-                    <label>Assignment Date</label>
-                    <input
-                      type="date"
-                      className="svc-form-input"
-                      value={allocationForm.assignedDate}
-                      onChange={(e) =>
-                        setAllocationForm({
-                          ...allocationForm,
-                          assignedDate: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
+                        {/* Technician Dropdown */}
+                        <div className="svc-form-group">
+                          <label>
+                            {isLead ? 'Select Technician / Agency Staff *' : `Select Specialist ${idx + 1} (${slot.soId}) *`}
+                          </label>
+                          <select
+                            className="svc-form-select"
+                            value={slot.technicianId}
+                            onChange={(e) => handleSlotChange(idx, 'technicianId', e.target.value)}
+                          >
+                            {technicians.map((t) => (
+                              <option key={t.id} value={t.id}>
+                                {t.name} — {t.skill} ({t.mobile})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
 
-                  <div className="svc-form-group">
-                    <label>Target Completion Date</label>
-                    <input
-                      type="date"
-                      className="svc-form-input"
-                      value={allocationForm.targetDate}
-                      onChange={(e) =>
-                        setAllocationForm({
-                          ...allocationForm,
-                          targetDate: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
+                        {/* Role and Target Date */}
+                        <div className="svc-form-row-2">
+                          <div className="svc-form-group">
+                            <label>Role / Assignment Directive</label>
+                            <input
+                              type="text"
+                              className="svc-form-input"
+                              placeholder={defaultRole}
+                              value={slot.role || ''}
+                              onChange={(e) => handleSlotChange(idx, 'role', e.target.value)}
+                            />
+                          </div>
+                          <div className="svc-form-group">
+                            <label>Target Date</label>
+                            <input
+                              type="date"
+                              className="svc-form-input"
+                              value={slot.targetDate || allocationForm.targetDate}
+                              onChange={(e) => handleSlotChange(idx, 'targetDate', e.target.value)}
+                            />
+                          </div>
+                        </div>
 
-                <div className="svc-form-group">
-                  <label>Work Order Directives &amp; Field Instructions</label>
-                  <textarea
-                    rows={3}
-                    className="svc-form-textarea"
-                    value={allocationForm.instructions}
-                    onChange={(e) =>
-                      setAllocationForm({
-                        ...allocationForm,
-                        instructions: e.target.value,
-                      })
-                    }
-                  />
+                        {/* Directives / Instructions */}
+                        <div className="svc-form-group" style={{ marginBottom: 0 }}>
+                          <label>Field Instructions for {slot.soId}</label>
+                          <textarea
+                            rows={2}
+                            className="svc-form-textarea"
+                            placeholder="Enter specific tasks, tooling, or safety instructions..."
+                            value={slot.instructions || ''}
+                            onChange={(e) => handleSlotChange(idx, 'instructions', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1795,14 +2624,29 @@ export default function Services({
         </div>
       )}
 
-      {/* ── MODAL 5: EDIT COMPLAINT DETAILS ──────────────────────────────── */}
+      {/* ── MODAL 5: COMPREHENSIVE WORK ORDER & CASE EDIT WORKFLOW MODAL ─── */}
       {isEditModalOpen && editingRequest && (
         <div className="svc-modal-backdrop" onClick={() => setIsEditModalOpen(false)}>
-          <div className="svc-modal" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="svc-modal svc-modal-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="svc-modal-header">
               <div>
-                <span className="svc-modal-eyebrow">UPDATE COMPLAINT</span>
-                <h3 className="svc-modal-title">Edit {editingRequest.id}</h3>
+                <span className="svc-modal-eyebrow">
+                  CASE ORDER &amp; WORK ORDER DISPATCH WORKFLOW
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <h3 className="svc-modal-title">
+                    Edit {editingRequest.id} · {editingRequest.service}
+                  </h3>
+                  <span className="svc-case-order-chip" title="Linked Resident / RWA Case Order">
+                    {editingRequest.caseOrderId || 'CASE-101'}
+                  </span>
+                  <span className="svc-work-order-chip" title="Linked Agency Work Order">
+                    {editingRequest.workOrderId || 'WO-101'}
+                  </span>
+                </div>
               </div>
               <button
                 type="button"
@@ -1814,88 +2658,770 @@ export default function Services({
               </button>
             </div>
 
-            <form onSubmit={handleEditSubmit}>
-              <div className="svc-modal-body">
-                <div className="svc-form-group">
-                  <label>Case Title</label>
-                  <input
-                    type="text"
-                    className="svc-form-input"
-                    value={editingRequest.caseTitle || ''}
-                    onChange={(e) =>
-                      setEditingRequest({
-                        ...editingRequest,
-                        caseTitle: e.target.value,
-                      })
-                    }
-                  />
-                </div>
+            {/* Workflow Navigation Strip */}
+            <div className="svc-modal-tabs-strip">
+              <button
+                type="button"
+                className={`svc-modal-tab-btn ${editModalTab === 'all' ? 'active' : ''}`}
+                onClick={() => setEditModalTab('all')}
+              >
+                All Details &amp; Workflow
+              </button>
+              <button
+                type="button"
+                className={`svc-modal-tab-btn ${editModalTab === 'inbound' ? 'active' : ''}`}
+                onClick={() => setEditModalTab('inbound')}
+              >
+                1. From Resident / RWA (Origin, Location, Photos)
+              </button>
+              <button
+                type="button"
+                className={`svc-modal-tab-btn ${editModalTab === 'agency' ? 'active' : ''}`}
+                onClick={() => setEditModalTab('agency')}
+              >
+                2. Our Part (Materials &amp; Multi-Tech Allocation)
+              </button>
+            </div>
 
-                <div className="svc-form-group">
-                  <label>Description</label>
-                  <textarea
-                    rows={3}
-                    className="svc-form-textarea"
-                    value={editingRequest.description || ''}
-                    onChange={(e) =>
-                      setEditingRequest({
-                        ...editingRequest,
-                        description: e.target.value,
-                      })
-                    }
-                  />
-                </div>
+            <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+              <div className="svc-modal-body" style={{ maxHeight: '72vh', overflowY: 'auto' }}>
+                <div className="svc-edit-grid">
+                  {/* ─────────────────────────────────────────────────────────────
+                      SECTION 1: INBOUND DETAILS (FROM RESIDENT / RWA)
+                  ───────────────────────────────────────────────────────────── */}
+                  {(editModalTab === 'all' || editModalTab === 'inbound') && (
+                    <div className="svc-edit-section svc-edit-inbound-card">
+                      <div className="svc-edit-section-header">
+                        <div className="svc-edit-sec-icon-blue">
+                          <SlimFileText size={18} />
+                        </div>
+                        <div>
+                          <h4 className="svc-edit-sec-title">1. From Resident / RWA</h4>
+                          <p className="svc-edit-sec-subtitle">
+                            Inbound complaint origin, resident identity &amp; reported problem
+                          </p>
+                        </div>
+                      </div>
 
-                <div className="svc-form-row-2">
-                  <div className="svc-form-group">
-                    <label>Priority</label>
-                    <select
-                      className="svc-form-select"
-                      value={editingRequest.priority || 'Normal'}
-                      onChange={(e) =>
-                        setEditingRequest({
-                          ...editingRequest,
-                          priority: e.target.value,
-                        })
-                      }
-                    >
-                      <option value="Low">Low</option>
-                      <option value="Normal">Normal</option>
-                      <option value="High">High</option>
-                      <option value="Emergency">Emergency</option>
-                    </select>
-                  </div>
+                      {/* Origin Source & Identity */}
+                      <div className="svc-edit-subcard">
+                        <span className="svc-edit-subcard-title">
+                          Ticket Origin &amp; Originator
+                        </span>
+                        <div className="svc-edit-origin-pills">
+                          {['Residence', 'RWA Office', 'Security Desk'].map((src) => (
+                            <button
+                              key={src}
+                              type="button"
+                              className={`svc-origin-pill-btn ${editingRequest.raisedBy === src ? 'active' : ''}`}
+                              onClick={() => setEditingRequest({ ...editingRequest, raisedBy: src })}
+                            >
+                              {src}
+                            </button>
+                          ))}
+                        </div>
 
-                  <div className="svc-form-group">
-                    <label>Target Date</label>
-                    <input
-                      type="date"
-                      className="svc-form-input"
-                      value={editingRequest.targetDate || ''}
-                      onChange={(e) =>
-                        setEditingRequest({
-                          ...editingRequest,
-                          targetDate: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
+                        <div className="svc-form-row-2">
+                          <div className="svc-form-group">
+                            <label>Resident / Originator Name</label>
+                            <input
+                              type="text"
+                              className="svc-form-input"
+                              value={editingRequest.resident || ''}
+                              onChange={(e) =>
+                                setEditingRequest({ ...editingRequest, resident: e.target.value })
+                              }
+                              placeholder="e.g. Kavya Sharma"
+                            />
+                          </div>
+
+                          <div className="svc-form-group">
+                            <label>Resident Mobile Number</label>
+                            <input
+                              type="text"
+                              className="svc-form-input"
+                              value={editingRequest.residentPhone || ''}
+                              onChange={(e) =>
+                                setEditingRequest({ ...editingRequest, residentPhone: e.target.value })
+                              }
+                              placeholder="+91 98765 43210"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="svc-form-row-2">
+                          <div className="svc-form-group">
+                            <label>Case Order ID</label>
+                            <input
+                              type="text"
+                              className="svc-form-input"
+                              value={editingRequest.caseOrderId || ''}
+                              onChange={(e) =>
+                                setEditingRequest({ ...editingRequest, caseOrderId: e.target.value })
+                              }
+                            />
+                          </div>
+                          <div className="svc-form-group">
+                            <label>Category</label>
+                            <select
+                              className="svc-form-select"
+                              value={editingRequest.category || 'Technicians'}
+                              onChange={(e) =>
+                                setEditingRequest({ ...editingRequest, category: e.target.value })
+                              }
+                            >
+                              <option value="Technicians">Technicians</option>
+                              <option value="Security">Security</option>
+                              <option value="Daily Works">Daily Works</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="svc-form-group">
+                          <label>Complaint / Case Title</label>
+                          <input
+                            type="text"
+                            className="svc-form-input"
+                            value={editingRequest.caseTitle || ''}
+                            onChange={(e) =>
+                              setEditingRequest({ ...editingRequest, caseTitle: e.target.value })
+                            }
+                            placeholder="e.g. Main Power Distribution & Socket Sparks"
+                          />
+                        </div>
+
+                        <div className="svc-form-group" style={{ marginBottom: 0 }}>
+                          <label>Problem Description from Resident</label>
+                          <textarea
+                            rows={3}
+                            className="svc-form-textarea"
+                            value={editingRequest.description || ''}
+                            onChange={(e) =>
+                              setEditingRequest({ ...editingRequest, description: e.target.value })
+                            }
+                            placeholder="Detailed complaint description lodged by resident..."
+                          />
+                        </div>
+                      </div>
+
+                      {/* 2. Where, Location, Date & Time (d & t) */}
+                      <div className="svc-edit-subcard">
+                        <span className="svc-edit-subcard-title">
+                          <SlimMapPin size={13} /> 2. Where, Location, Date &amp; Time (d &amp; t)
+                        </span>
+
+                        <div className="svc-form-row-2">
+                          <div className="svc-form-group">
+                            <label>Society / Apartment</label>
+                            <input
+                              type="text"
+                              className="svc-form-input"
+                              value={editingRequest.apartment || ''}
+                              onChange={(e) =>
+                                setEditingRequest({ ...editingRequest, apartment: e.target.value })
+                              }
+                              placeholder="e.g. Surya Enclave"
+                            />
+                          </div>
+
+                          <div className="svc-form-group">
+                            <label>Tower / Wing / Block</label>
+                            <input
+                              type="text"
+                              className="svc-form-input"
+                              value={editingRequest.tower || ''}
+                              onChange={(e) =>
+                                setEditingRequest({ ...editingRequest, tower: e.target.value })
+                              }
+                              placeholder="e.g. Tower A"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="svc-form-row-2">
+                          <div className="svc-form-group">
+                            <label>Flat / Unit No</label>
+                            <input
+                              type="text"
+                              className="svc-form-input"
+                              value={editingRequest.flatNo || ''}
+                              onChange={(e) =>
+                                setEditingRequest({ ...editingRequest, flatNo: e.target.value })
+                              }
+                              placeholder="e.g. A-101"
+                            />
+                          </div>
+
+                          <div className="svc-form-group">
+                            <label>Specific Spot / Location</label>
+                            <input
+                              type="text"
+                              className="svc-form-input"
+                              value={editingRequest.specificLocation || ''}
+                              onChange={(e) =>
+                                setEditingRequest({ ...editingRequest, specificLocation: e.target.value })
+                              }
+                              placeholder="e.g. Master Bedroom & Switchboard"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Date & Time (d & t) */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                          <div className="svc-form-group">
+                            <label>
+                              <SlimCalendar size={12} style={{ marginRight: '4px' }} /> Reported Date
+                            </label>
+                            <input
+                              type="date"
+                              className="svc-form-input"
+                              value={editingRequest.reportedDate || ''}
+                              onChange={(e) =>
+                                setEditingRequest({ ...editingRequest, reportedDate: e.target.value })
+                              }
+                            />
+                          </div>
+
+                          <div className="svc-form-group">
+                            <label>
+                              <SlimClock size={12} style={{ marginRight: '4px' }} /> Reported Time
+                            </label>
+                            <input
+                              type="time"
+                              className="svc-form-input"
+                              value={editingRequest.reportedTime || '09:15'}
+                              onChange={(e) =>
+                                setEditingRequest({ ...editingRequest, reportedTime: e.target.value })
+                              }
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '8px' }}>
+                          <div className="svc-form-group">
+                            <label>Priority</label>
+                            <select
+                              className="svc-form-select"
+                              value={editingRequest.priority || 'Normal'}
+                              onChange={(e) =>
+                                setEditingRequest({ ...editingRequest, priority: e.target.value })
+                              }
+                            >
+                              <option value="Low">Low</option>
+                              <option value="Normal">Normal</option>
+                              <option value="High">High</option>
+                              <option value="Emergency">Emergency</option>
+                            </select>
+                          </div>
+
+                          <div className="svc-form-group">
+                            <label>Target SLA Date</label>
+                            <input
+                              type="date"
+                              className="svc-form-input"
+                              value={editingRequest.targetDate || ''}
+                              onChange={(e) =>
+                                setEditingRequest({ ...editingRequest, targetDate: e.target.value })
+                              }
+                            />
+                          </div>
+
+                          <div className="svc-form-group">
+                            <label>Target SLA Time</label>
+                            <input
+                              type="time"
+                              className="svc-form-input"
+                              value={editingRequest.targetTime || '17:00'}
+                              onChange={(e) =>
+                                setEditingRequest({ ...editingRequest, targetTime: e.target.value })
+                              }
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 3. Image & Media (Defect Photos + Audio Note) */}
+                      <div className="svc-edit-subcard">
+                        <span className="svc-edit-subcard-title">
+                          <SlimImage size={13} /> 3. Images &amp; Inspection Media
+                        </span>
+
+                        <div className="svc-edit-images-grid">
+                          {(editingRequest.images || []).map((imgUrl, idx) => (
+                            <div
+                              key={idx}
+                              className="svc-edit-img-thumb"
+                              title="Click to view enlarged image"
+                              onClick={() => setPreviewImage(imgUrl)}
+                            >
+                              <img src={imgUrl} alt={`Defect inspect ${idx + 1}`} />
+                              <button
+                                type="button"
+                                className="svc-edit-img-remove"
+                                title="Remove photo"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveImage(idx);
+                                }}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+
+                        {(!editingRequest.images || editingRequest.images.length === 0) && (
+                          <div style={{ fontSize: '0.74rem', color: '#64748B', fontStyle: 'italic' }}>
+                            No inspection photos attached.
+                          </div>
+                        )}
+
+                        <div className="svc-edit-add-img-box">
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <input
+                              type="text"
+                              className="svc-form-input"
+                              placeholder="Paste inspection photo URL..."
+                              value={newImageUrlInput}
+                              onChange={(e) => setNewImageUrlInput(e.target.value)}
+                              style={{ flex: 1, fontSize: '0.78rem' }}
+                            />
+                            <button
+                              type="button"
+                              className="svc-btn-pill-secondary"
+                              style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                              onClick={() => handleAddImage(newImageUrlInput)}
+                            >
+                              + Add Photo
+                            </button>
+                          </div>
+
+                          {/* Quick Photo Presets */}
+                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                            <button
+                              type="button"
+                              className="svc-btn-pill-secondary"
+                              style={{ padding: '2px 8px', fontSize: '0.7rem' }}
+                              onClick={() =>
+                                handleAddImage('https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=600&q=80')
+                              }
+                            >
+                              + Spark Defect
+                            </button>
+                            <button
+                              type="button"
+                              className="svc-btn-pill-secondary"
+                              style={{ padding: '2px 8px', fontSize: '0.7rem' }}
+                              onClick={() =>
+                                handleAddImage('https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=600&q=80')
+                              }
+                            >
+                              + Drain Leak
+                            </button>
+                            <button
+                              type="button"
+                              className="svc-btn-pill-secondary"
+                              style={{ padding: '2px 8px', fontSize: '0.7rem' }}
+                              onClick={() =>
+                                handleAddImage('https://images.unsplash.com/photo-1621905252507-b35492cc74b4?auto=format&fit=crop&w=600&q=80')
+                              }
+                            >
+                              + AC Outdoor
+                            </button>
+                            <button
+                              type="button"
+                              className="svc-btn-pill-secondary"
+                              style={{ padding: '2px 8px', fontSize: '0.7rem' }}
+                              onClick={() =>
+                                handleAddImage('https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=600&q=80')
+                              }
+                            >
+                              + Wall Crack
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Resident Voice Audio Note */}
+                        {editingRequest.audio && (
+                          <div style={{ marginTop: '8px', borderTop: '1px solid #E2E8F0', paddingTop: '8px' }}>
+                            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                              🎧 Attached Resident Voice Audio Memo:
+                            </div>
+                            <AudioVoicePlayer audio={editingRequest.audio} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ─────────────────────────────────────────────────────────────
+                      SECTION 2: OUR PART (AGENCY EXECUTION & DISPATCH)
+                  ───────────────────────────────────────────────────────────── */}
+                  {(editModalTab === 'all' || editModalTab === 'agency') && (
+                    <div className="svc-edit-section svc-edit-agency-card">
+                      <div className="svc-edit-section-header">
+                        <div className="svc-edit-sec-icon-green">
+                          <SlimWrench size={18} />
+                        </div>
+                        <div>
+                          <h4 className="svc-edit-sec-title">2. Our Part · Materials &amp; Technicians</h4>
+                          <p className="svc-edit-sec-subtitle">
+                            Parts requisition, multi-technician allocation (SO-1/2/3) &amp; lifecycle stage
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* 1. Require - Material */}
+                      <div className="svc-edit-subcard">
+                        <span className="svc-edit-subcard-title">
+                          <SlimPackage size={13} /> 1. Required Materials &amp; Spare Parts Checklist
+                        </span>
+
+                        {(!editingRequest.materials || editingRequest.materials.length === 0) ? (
+                          <div style={{ fontSize: '0.74rem', color: '#64748B', fontStyle: 'italic' }}>
+                            No materials requested for this job yet. Add required items below.
+                          </div>
+                        ) : (
+                          <table className="svc-material-table">
+                            <thead>
+                              <tr>
+                                <th>Item / Part</th>
+                                <th style={{ width: '80px' }}>Qty</th>
+                                <th style={{ width: '130px' }}>Status</th>
+                                <th style={{ width: '32px' }} />
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {editingRequest.materials.map((mat) => (
+                                <tr key={mat.id}>
+                                  <td>
+                                    <strong style={{ color: '#1E293B' }}>{mat.name}</strong>
+                                  </td>
+                                  <td>
+                                    <span style={{ fontSize: '0.75rem', color: '#475569' }}>{mat.qty}</span>
+                                  </td>
+                                  <td>
+                                    <select
+                                      className="svc-material-status-select"
+                                      value={mat.status}
+                                      onChange={(e) => handleMaterialStatusChange(mat.id, e.target.value)}
+                                    >
+                                      <option value="In Stock">🟢 In Stock</option>
+                                      <option value="To Procure">🟡 To Procure</option>
+                                      <option value="Issued to Tech">🔵 Issued to Tech</option>
+                                      <option value="Used / Fitted">⚪ Fitted / Used</option>
+                                    </select>
+                                  </td>
+                                  <td style={{ textAlign: 'right' }}>
+                                    <button
+                                      type="button"
+                                      className="svc-modal-close"
+                                      style={{ padding: '2px' }}
+                                      title="Remove material item"
+                                      onClick={() => handleRemoveMaterialItem(mat.id)}
+                                    >
+                                      <SlimTrash size={12} style={{ color: '#EF4444' }} />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+
+                        {/* Add Material Item Form */}
+                        <div className="svc-material-add-form">
+                          <input
+                            type="text"
+                            className="svc-form-input"
+                            placeholder="Material / Part name..."
+                            value={newMaterialInput.name}
+                            onChange={(e) =>
+                              setNewMaterialInput({ ...newMaterialInput, name: e.target.value })
+                            }
+                            style={{ fontSize: '0.76rem' }}
+                          />
+                          <input
+                            type="text"
+                            className="svc-form-input"
+                            placeholder="Qty (e.g. 1 unit)"
+                            value={newMaterialInput.qty}
+                            onChange={(e) =>
+                              setNewMaterialInput({ ...newMaterialInput, qty: e.target.value })
+                            }
+                            style={{ fontSize: '0.76rem' }}
+                          />
+                          <select
+                            className="svc-form-select"
+                            value={newMaterialInput.status}
+                            onChange={(e) =>
+                              setNewMaterialInput({ ...newMaterialInput, status: e.target.value })
+                            }
+                            style={{ fontSize: '0.74rem' }}
+                          >
+                            <option value="In Stock">In Stock</option>
+                            <option value="To Procure">To Procure</option>
+                            <option value="Issued to Tech">Issued to Tech</option>
+                          </select>
+                          <button
+                            type="button"
+                            className="svc-btn-pill-primary"
+                            style={{ padding: '6px 10px', fontSize: '0.74rem' }}
+                            onClick={handleAddMaterialItem}
+                          >
+                            + Add
+                          </button>
+                        </div>
+
+                        <div className="svc-form-group" style={{ margin: '4px 0 0' }}>
+                          <label style={{ fontSize: '0.72rem' }}>Material &amp; Requisition Notes</label>
+                          <textarea
+                            rows={1}
+                            className="svc-form-textarea"
+                            placeholder="Store procurement directives or vendor invoice references..."
+                            value={editingRequest.materialNotes || ''}
+                            onChange={(e) =>
+                              setEditingRequest({ ...editingRequest, materialNotes: e.target.value })
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      {/* 2. How many Technicians to Assign (Multi-Technician Assignment) */}
+                      <div className="svc-edit-subcard">
+                        <span className="svc-edit-subcard-title">
+                          <SlimUsers size={13} /> 2. How Many Technicians to Assign?
+                        </span>
+
+                        {/* Technician Count Toggle */}
+                        <div className="svc-tech-count-pills">
+                          <button
+                            type="button"
+                            className={`svc-tech-count-pill-btn ${editingRequest.techCount === 1 ? 'active' : ''}`}
+                            onClick={() => handleEditTechCountChange(1)}
+                          >
+                            <SlimUsers size={13} /> 1 Technician
+                          </button>
+                          <button
+                            type="button"
+                            className={`svc-tech-count-pill-btn ${editingRequest.techCount === 2 ? 'active' : ''}`}
+                            onClick={() => handleEditTechCountChange(2)}
+                          >
+                            <SlimUsers size={13} /> 2 Technicians
+                          </button>
+                          <button
+                            type="button"
+                            className={`svc-tech-count-pill-btn ${editingRequest.techCount === 3 ? 'active' : ''}`}
+                            onClick={() => handleEditTechCountChange(3)}
+                          >
+                            <SlimUsers size={13} /> 3 Technicians
+                          </button>
+                        </div>
+
+                        {/* Dynamic Technician Slots */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {(editingRequest.slots || []).slice(0, editingRequest.techCount || 1).map((slot, idx) => {
+                            const soLabel = idx === 0 ? 'SO-1 · Primary Specialist (Lead)' : idx === 1 ? 'SO-2 · Co-Specialist / Assistant' : 'SO-3 · Support & Safety';
+                            return (
+                              <div key={idx} className="svc-edit-tech-slot-box">
+                                <div className="svc-edit-tech-slot-header">
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span className={`svc-so-badge ${idx === 0 ? 'svc-so-badge-lead' : ''}`}>
+                                      {slot.soId}
+                                    </span>
+                                    <strong style={{ fontSize: '0.78rem', color: '#1E293B' }}>
+                                      {soLabel}
+                                    </strong>
+                                  </div>
+                                </div>
+
+                                <div className="svc-form-row-2" style={{ gap: '8px' }}>
+                                  <div className="svc-form-group" style={{ marginBottom: 0 }}>
+                                    <label>Assigned Specialist</label>
+                                    <select
+                                      className="svc-form-select"
+                                      value={slot.technicianId}
+                                      onChange={(e) => handleEditSlotChange(idx, 'technicianId', e.target.value)}
+                                    >
+                                      {technicians.map((t) => (
+                                        <option key={t.id} value={t.id}>
+                                          {t.name} ({t.skill}) — {t.mobile}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+
+                                  <div className="svc-form-group" style={{ marginBottom: 0 }}>
+                                    <label>Role / Responsibility</label>
+                                    <input
+                                      type="text"
+                                      className="svc-form-input"
+                                      value={slot.role || ''}
+                                      onChange={(e) => handleEditSlotChange(idx, 'role', e.target.value)}
+                                      placeholder="e.g. Lead Electrician / Assistant"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="svc-form-group" style={{ marginBottom: 0 }}>
+                                  <label>Task Instructions for {slot.soId}</label>
+                                  <textarea
+                                    rows={1}
+                                    className="svc-form-textarea"
+                                    value={slot.instructions || ''}
+                                    onChange={(e) => handleEditSlotChange(idx, 'instructions', e.target.value)}
+                                    placeholder="Execution directive for this technician..."
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* 3. All Workflow (Stage Pipeline & WO Info) */}
+                      <div className="svc-edit-subcard">
+                        <span className="svc-edit-subcard-title">
+                          <SlimActivity size={13} /> 3. Lifecycle Stage Pipeline &amp; Work Order
+                        </span>
+
+                        <div className="svc-form-row-2">
+                          <div className="svc-form-group" style={{ marginBottom: 0 }}>
+                            <label>Work Order ID</label>
+                            <input
+                              type="text"
+                              className="svc-form-input"
+                              value={editingRequest.workOrderId || ''}
+                              onChange={(e) =>
+                                setEditingRequest({ ...editingRequest, workOrderId: e.target.value })
+                              }
+                            />
+                          </div>
+
+                          <div className="svc-form-group" style={{ marginBottom: 0 }}>
+                            <label>Work Order Title</label>
+                            <input
+                              type="text"
+                              className="svc-form-input"
+                              value={editingRequest.workOrderTitle || ''}
+                              onChange={(e) =>
+                                setEditingRequest({ ...editingRequest, workOrderTitle: e.target.value })
+                              }
+                            />
+                          </div>
+                        </div>
+
+                        {/* Stage Pipeline Buttons */}
+                        <div>
+                          <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>
+                            Move Current Lifecycle Stage:
+                          </label>
+                          <div className="svc-stage-pipeline">
+                            {STAGES.map((s) => (
+                              <button
+                                key={s.id}
+                                type="button"
+                                className={`svc-stage-pipeline-btn ${editingRequest.status === s.id ? 'active' : ''}`}
+                                onClick={() => setEditingRequest({ ...editingRequest, status: s.id })}
+                              >
+                                <span style={{ color: s.dotColor, marginRight: '4px' }}>●</span>
+                                {s.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {editingRequest.status === 'On Hold' && (
+                          <div style={{ background: '#FFF1F2', border: '1px solid #FECDD3', borderRadius: '8px', padding: '8px 10px', marginTop: '6px' }}>
+                            <label style={{ color: '#E11D48', fontWeight: 700, fontSize: '0.74rem' }}>
+                              On-Hold Reason *
+                            </label>
+                            <input
+                              type="text"
+                              className="svc-form-input"
+                              style={{ borderColor: '#FDA4AF', marginTop: '4px' }}
+                              value={editingRequest.holdReason || ''}
+                              onChange={(e) =>
+                                setEditingRequest({ ...editingRequest, holdReason: e.target.value })
+                              }
+                              placeholder="e.g. Awaiting high-grade elastomer polymer sealant..."
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="svc-modal-footer">
-                <button
-                  type="button"
-                  className="svc-btn-pill-secondary"
-                  onClick={() => setIsEditModalOpen(false)}
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="svc-btn-pill-primary">
-                  Save Changes
-                </button>
+              {/* Modal Footer Actions */}
+              <div
+                className="svc-modal-footer"
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+              >
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className="svc-btn-pill-secondary"
+                    style={{ color: '#E11D48', borderColor: '#FECDD3' }}
+                    title="Delete complaint"
+                    aria-label="Delete"
+                    onClick={() => {
+                      const id = editingRequest.id;
+                      setIsEditModalOpen(false);
+                      setDeletingRequestId(id);
+                    }}
+                  >
+                    <SlimTrash size={13} style={{ marginRight: '4px' }} />
+                    Delete
+                  </button>
+                  <button
+                    type="button"
+                    className="svc-btn-pill-secondary"
+                    title="Allocate Specialist"
+                    aria-label="Allocate"
+                    onClick={() => {
+                      const r = editingRequest;
+                      setIsEditModalOpen(false);
+                      openAllocateModal(r);
+                    }}
+                  >
+                    <SlimUserCheck size={13} style={{ marginRight: '4px' }} />
+                    Allocate
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className="svc-btn-pill-secondary"
+                    onClick={() => setIsEditModalOpen(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="svc-btn-pill-primary">
+                    Save Changes &amp; Dispatch
+                  </button>
+                </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── IMAGE LIGHTBOX ENLARGED PREVIEW ───────────────────────────────── */}
+      {previewImage && (
+        <div className="svc-lightbox-backdrop" onClick={() => setPreviewImage(null)}>
+          <div className="svc-lightbox-content" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="svc-lightbox-close"
+              onClick={() => setPreviewImage(null)}
+              aria-label="Close image preview"
+            >
+              <SlimX size={16} strokeWidth={2} />
+            </button>
+            <img src={previewImage} alt="Enlarged Defect Inspection" />
           </div>
         </div>
       )}

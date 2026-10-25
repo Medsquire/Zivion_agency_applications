@@ -1236,10 +1236,11 @@ export default function Properties() {
           <div className="cp-header-row" style={{ marginTop: '8px' }}>
             <div>
               <h1 className="cp-page-title">{activeTier.name} — Enclaves &amp; Societies</h1>
-              <div className="cp-lead-badge">
-                <SlimShield size={12} />
-                <span>Lead: {activeTier.admin?.name || 'Rajeshwar Rao'}</span>
-              </div>
+              {activeTier.admin && (
+                <div className="cp-tier-admin-badge" style={{ marginTop: '4px', fontSize: '0.84rem', color: '#64748B' }}>
+                  Community Admin: <strong style={{ color: '#0F172A' }}>{activeTier.admin.name}</strong> · {activeTier.admin.role} ({activeTier.admin.phone})
+                </div>
+              )}
             </div>
             <div className="cp-header-buttons">
               <button
@@ -1406,12 +1407,36 @@ export default function Properties() {
                   ></div>
                 </div>
 
-
+                <button
+                  type="button"
+                  className="sr-only"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedTowerCode(tower.code);
+                    setCurrentView('floor-map');
+                  }}
+                >
+                  Open floor map →
+                </button>
               </div>
             ))}
           </div>
 
-
+          {/* Society Technicians Strip */}
+          {activeSociety.technicians && activeSociety.technicians.length > 0 && (
+            <div className="cp-society-techs-section" style={{ marginTop: '24px' }}>
+              <div style={{ fontSize: '0.84rem', fontWeight: 600, color: '#64748B', marginBottom: '8px' }}>
+                Service technicians for this society:
+              </div>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                {activeSociety.technicians.map((t) => (
+                  <span key={t.name} className="cp-badge-pill" style={{ background: '#F1F5F9', padding: '6px 12px', borderRadius: '6px', fontSize: '0.82rem' }}>
+                    <strong>{t.name}</strong> ({t.specialty || t.skill}) · {t.phone}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

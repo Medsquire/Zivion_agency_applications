@@ -1513,3 +1513,836 @@
     transform: translateY(0);
   }
 }
+
+/* ── Work Order (WO) to Technicians (SO-1, SO-2, SO-3) Styles ─────────── */
+
+.svc-so-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #EEF2FF;
+  border: 1px solid #C7D2FE;
+  color: #4338CA;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-family: var(--font-mono, monospace);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.svc-so-badge-lead {
+  background: #FDF4FF;
+  border-color: #F0ABFC;
+  color: #A21CAF;
+}
+
+.svc-tech-count-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #F0FDF4;
+  border: 1px solid #BBF7D0;
+  color: #15803D;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  margin-left: 4px;
+}
+
+.svc-tech-multi-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.svc-tech-single-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+}
+
+.svc-tech-single-row strong {
+  color: #0F172A;
+  font-weight: 600;
+}
+
+/* Allocation Modal: Multi-Tech Count Selector */
+.svc-alloc-count-container {
+  margin-bottom: 16px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.svc-alloc-count-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.svc-alloc-count-header label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1E293B;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.svc-alloc-count-pills {
+  display: flex;
+  gap: 6px;
+}
+
+.svc-alloc-count-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #FFFFFF;
+  border: 1.5px solid #CBD5E1;
+  color: #475569;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.svc-alloc-count-btn:hover {
+  background: #F1F5F9;
+  border-color: #94A3B8;
+}
+
+.svc-alloc-count-btn.active {
+  background: #2563EB;
+  border-color: #1D4ED8;
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+}
+
+/* Allocation Technician Slot Card */
+.svc-alloc-slots-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.svc-alloc-tech-slot-card {
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: border-color 0.2s ease;
+}
+
+.svc-alloc-tech-slot-card:focus-within {
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.svc-alloc-slot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.svc-alloc-slot-badge-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.svc-alloc-slot-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1E293B;
+}
+
+/* Dossier: Service Orders Grid */
+.svc-dossier-so-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.svc-dossier-so-card {
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.svc-dossier-so-card:hover {
+  border-color: #93C5FD;
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.08);
+}
+
+.svc-dossier-so-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.svc-dossier-so-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.svc-dossier-so-skill {
+  font-size: 0.74rem;
+  color: #64748B;
+  font-weight: 500;
+}
+
+.svc-dossier-so-role {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #2563EB;
+  background: #EFF6FF;
+  padding: 2px 7px;
+  border-radius: 4px;
+  display: inline-block;
+  align-self: flex-start;
+}
+
+.svc-dossier-so-phone {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.76rem;
+  color: #475569;
+  text-decoration: none;
+  margin-top: 4px;
+}
+
+.svc-dossier-so-phone:hover {
+  color: #2563EB;
+}
+
+/* Audit Trail & Activity Log Tab */
+.svc-audit-timeline-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 8px 4px;
+}
+
+.svc-audit-item {
+  display: flex;
+  gap: 14px;
+  position: relative;
+  padding-bottom: 20px;
+}
+
+.svc-audit-item:last-child {
+  padding-bottom: 4px;
+}
+
+.svc-audit-line-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.svc-audit-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #EFF6FF;
+  border: 1.5px solid #3B82F6;
+  color: #2563EB;
+  flex-shrink: 0;
+  z-index: 2;
+}
+
+.svc-audit-dot.dot-dispatch {
+  background: #FAF5FF;
+  border-color: #A855F7;
+  color: #9333EA;
+}
+
+.svc-audit-dot.dot-audio {
+  background: #ECFDF5;
+  border-color: #10B981;
+  color: #059669;
+}
+
+.svc-audit-line {
+  position: absolute;
+  top: 22px;
+  bottom: 0;
+  width: 2px;
+  background: #E2E8F0;
+}
+
+.svc-audit-content {
+  flex: 1;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.svc-audit-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3px;
+}
+
+.svc-audit-action-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.svc-audit-time {
+  font-size: 0.72rem;
+  color: #64748B;
+  font-variant-numeric: tabular-nums;
+}
+
+.svc-audit-detail {
+  font-size: 0.77rem;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.svc-audit-actor {
+  margin-top: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748B;
+}
+
+/* ── Dark Mode Adaptations ────────────────────────────────────────── */
+[data-theme='dark'] .svc-so-badge {
+  background: #1E1B4B;
+  border-color: #3730A3;
+  color: #A5B4FC;
+}
+
+[data-theme='dark'] .svc-so-badge-lead {
+  background: #3B0764;
+  border-color: #701A75;
+  color: #F0ABFC;
+}
+
+[data-theme='dark'] .svc-tech-count-chip {
+  background: #052E16;
+  border-color: #14532D;
+  color: #86EFAC;
+}
+
+[data-theme='dark'] .svc-tech-single-row strong {
+  color: #F1F5F9;
+}
+
+[data-theme='dark'] .svc-alloc-count-container {
+  background: #0F172A;
+  border-color: #334155;
+}
+
+[data-theme='dark'] .svc-alloc-count-header label {
+  color: #CBD5E1;
+}
+
+[data-theme='dark'] .svc-alloc-count-btn {
+  background: #1E293B;
+  border-color: #334155;
+  color: #CBD5E1;
+}
+
+[data-theme='dark'] .svc-alloc-tech-slot-card {
+  background: #1E293B;
+  border-color: #334155;
+}
+
+[data-theme='dark'] .svc-alloc-slot-title {
+  color: #F8FAFC;
+}
+
+[data-theme='dark'] .svc-dossier-so-card {
+  background: #1E293B;
+  border-color: #334155;
+}
+
+[data-theme='dark'] .svc-dossier-so-name {
+  color: #F8FAFC;
+}
+
+[data-theme='dark'] .svc-dossier-so-role {
+  background: #1E3A8A;
+  color: #93C5FD;
+}
+
+[data-theme='dark'] .svc-audit-content {
+  background: #1E293B;
+  border-color: #334155;
+}
+
+[data-theme='dark'] .svc-audit-action-title {
+  color: #F8FAFC;
+}
+
+[data-theme='dark'] .svc-audit-detail {
+  color: #CBD5E1;
+}
+
+[data-theme='dark'] .svc-audit-line {
+  background: #334155;
+}
+
+/* ── COMPREHENSIVE EDIT WORKFLOW MODAL (Inbound + Our Part) ────────── */
+.svc-modal-xl {
+  max-width: 980px !important;
+  width: 95vw !important;
+  max-height: 92vh !important;
+}
+
+.svc-edit-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 1.15fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .svc-edit-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.svc-edit-section {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.svc-edit-inbound-card {
+  border-top: 3px solid #2563EB;
+}
+
+.svc-edit-agency-card {
+  border-top: 3px solid #059669;
+}
+
+.svc-edit-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.svc-edit-sec-icon-blue {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #EFF6FF;
+  color: #2563EB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.svc-edit-sec-icon-green {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #ECFDF5;
+  color: #059669;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.svc-edit-sec-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0F172A;
+  line-height: 1.2;
+}
+
+.svc-edit-sec-subtitle {
+  margin: 2px 0 0;
+  font-size: 0.72rem;
+  color: #64748B;
+}
+
+.svc-edit-subcard {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.svc-edit-subcard-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.svc-edit-origin-pills {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.svc-origin-pill-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  color: #475569;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.svc-origin-pill-btn.active {
+  background: #2563EB;
+  border-color: #2563EB;
+  color: #FFFFFF;
+}
+
+/* Image Thumbnails & Upload */
+.svc-edit-images-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.svc-edit-img-thumb {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #CBD5E1;
+  cursor: pointer;
+  background: #E2E8F0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.svc-edit-img-thumb:hover {
+  transform: scale(1.04);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+}
+
+.svc-edit-img-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.svc-edit-img-remove {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  background: rgba(15, 23, 42, 0.75);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 11px;
+  transition: background 0.15s;
+}
+
+.svc-edit-img-remove:hover {
+  background: #E11D48;
+}
+
+.svc-edit-add-img-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+/* Materials Requisition Table */
+.svc-material-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.svc-material-table th {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748B;
+  padding: 4px 6px;
+  text-align: left;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.svc-material-table td {
+  padding: 6px;
+  border-bottom: 1px solid #F1F5F9;
+  font-size: 0.78rem;
+  vertical-align: middle;
+}
+
+.svc-material-status-select {
+  padding: 3px 6px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border: 1px solid #CBD5E1;
+  background: #FFFFFF;
+}
+
+.svc-material-add-form {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.2fr auto;
+  gap: 6px;
+  margin-top: 6px;
+  align-items: center;
+}
+
+@media (max-width: 580px) {
+  .svc-material-add-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Multi-Tech Selector */
+.svc-tech-count-pills {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.svc-tech-count-pill-btn {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  color: #475569;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.svc-tech-count-pill-btn.active {
+  background: #0F172A;
+  border-color: #0F172A;
+  color: #FFFFFF;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.15);
+}
+
+.svc-edit-tech-slot-box {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.svc-edit-tech-slot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Stage Pipeline */
+.svc-stage-pipeline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.svc-stage-pipeline-btn {
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.svc-stage-pipeline-btn:hover {
+  background: #F1F5F9;
+  color: #0F172A;
+}
+
+.svc-stage-pipeline-btn.active {
+  background: #0F172A;
+  border-color: #0F172A;
+  color: #FFFFFF;
+}
+
+/* Lightbox Preview */
+.svc-lightbox-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  padding: 24px;
+}
+
+.svc-lightbox-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 85vh;
+  background: #FFFFFF;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.svc-lightbox-content img {
+  max-width: 100%;
+  max-height: 80vh;
+  display: block;
+}
+
+.svc-lightbox-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(15, 23, 42, 0.75);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* Dark Mode Support for Edit Workflow Modal */
+[data-theme='dark'] .svc-edit-section {
+  background: #1E293B;
+  border-color: #334155;
+}
+
+[data-theme='dark'] .svc-edit-subcard {
+  background: #0F172A;
+  border-color: #334155;
+}
+
+[data-theme='dark'] .svc-edit-sec-title {
+  color: #F8FAFC;
+}
+
+[data-theme='dark'] .svc-edit-subcard-title {
+  color: #94A3B8;
+}
+
+[data-theme='dark'] .svc-origin-pill-btn {
+  background: #1E293B;
+  border-color: #334155;
+  color: #CBD5E1;
+}
+
+[data-theme='dark'] .svc-origin-pill-btn.active {
+  background: #3B82F6;
+  border-color: #3B82F6;
+  color: #FFFFFF;
+}
+
+[data-theme='dark'] .svc-tech-count-pill-btn {
+  background: #1E293B;
+  border-color: #334155;
+  color: #CBD5E1;
+}
+
+[data-theme='dark'] .svc-tech-count-pill-btn.active {
+  background: #38BDF8;
+  border-color: #38BDF8;
+  color: #0F172A;
+}
+
+[data-theme='dark'] .svc-edit-tech-slot-box {
+  background: #0F172A;
+  border-color: #334155;
+}
+
+[data-theme='dark'] .svc-stage-pipeline-btn {
+  background: #1E293B;
+  border-color: #334155;
+  color: #CBD5E1;
+}
+
+[data-theme='dark'] .svc-stage-pipeline-btn.active {
+  background: #38BDF8;
+  border-color: #38BDF8;
+  color: #0F172A;
+}
+
+[data-theme='dark'] .svc-material-status-select {
+  background: #1E293B;
+  border-color: #334155;
+  color: #F8FAFC;
+}
+

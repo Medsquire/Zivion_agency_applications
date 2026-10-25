@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import TableScrollSlider from '../components/TableScrollSlider';
+import AudioVoicePlayer from '../components/AudioVoicePlayer';
 import {
   DashboardIcon,
   ServicesIcon,
@@ -303,7 +304,19 @@ function DashboardHome({
                       <span className="request-id-badge">{request.id}</span>
                     </td>
                     <td>
-                      <strong className="table-row-title">{request.service}</strong>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <strong className="table-row-title">{request.service}</strong>
+                          {request.workOrderId && (
+                            <span style={{ fontSize: '0.68rem', fontFamily: 'monospace', background: '#F1F5F9', color: '#475569', padding: '1px 5px', borderRadius: '4px', border: '1px solid #CBD5E1', fontWeight: 600 }}>
+                              {request.workOrderId}
+                            </span>
+                          )}
+                        </div>
+                        {request.audio && (
+                          <AudioVoicePlayer audio={request.audio} compact />
+                        )}
+                      </div>
                     </td>
                     <td>
                       <div className="resident-avatar-cell">
@@ -322,7 +335,23 @@ function DashboardHome({
                       </div>
                     </td>
                     <td>
-                      {request.technician ? (
+                      {request.assignedTechnicians && request.assignedTechnicians.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                          {request.assignedTechnicians.slice(0, 2).map((tech, idx) => (
+                            <span key={idx} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.78rem' }}>
+                              <span style={{ fontSize: '0.66rem', fontFamily: 'monospace', fontWeight: 700, background: idx === 0 ? '#FDF4FF' : '#EEF2FF', color: idx === 0 ? '#A21CAF' : '#4338CA', padding: '1px 5px', borderRadius: '3px', border: '1px solid currentColor' }}>
+                                {tech.soId || `SO-0${idx + 1}`}
+                              </span>
+                              <strong style={{ color: '#0F172A', fontWeight: 600 }}>{tech.name}</strong>
+                            </span>
+                          ))}
+                          {request.assignedTechnicians.length > 2 && (
+                            <span style={{ fontSize: '0.68rem', color: '#64748B', fontWeight: 600, paddingLeft: '4px' }}>
+                              +{request.assignedTechnicians.length - 2} more SO
+                            </span>
+                          )}
+                        </div>
+                      ) : request.technician ? (
                         <span className="table-specialist-item">
                           <span style={{ color: '#16A34A' }}>●</span>
                           {request.technician}
