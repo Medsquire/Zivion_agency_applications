@@ -51,8 +51,6 @@ describe('Communities & Properties Exact UI & Hierarchy Flow', () => {
     expect(screen.getByText('Tower A')).toBeInTheDocument();
     expect(screen.getByText('Tower B')).toBeInTheDocument();
     expect(screen.getByText('Tower C')).toBeInTheDocument();
-    expect(screen.getByText(/Service technicians for this society/i)).toBeInTheDocument();
-    expect(screen.getByText(/Suresh Babu/i)).toBeInTheDocument();
 
     // Step 3: Click "Open floor map →" on Tower A
     const mapLinks = screen.getAllByRole('button', { name: /Open floor map →/i });

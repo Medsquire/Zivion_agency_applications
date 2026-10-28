@@ -1,7 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import './Services.css';
 import TableScrollSlider from '../components/TableScrollSlider';
 import AudioVoicePlayer from '../components/AudioVoicePlayer';
+import { getRequestMedia } from './DashboardHome';
+import InspectionMediaModal from '../components/InspectionMediaModal';
 import {
   SlimServices,
   SlimWrench,
@@ -32,6 +34,7 @@ import {
   SlimFileText,
   SlimClock,
   SlimCalendar,
+  SlimEye,
 } from '../components/SlimIcons';
 
 // ── Helper to retrieve multiple technician assignments (so1-id, so2-id, so3-id) ──
@@ -195,14 +198,29 @@ export function getServiceClassification(req = {}) {
 }
 
 // ── 6 Lifecycle Stages ─────────────────────────────────────────────────────
+// 1. Pending (default)
+// 2. Assigned
+// 3. In Progress
+// 4. Hold
+// 5. Resolved
+// 6. Closed (only RWA/Residence will put)
 const STAGES = [
-  { id: 'Received Request', label: 'Received Req', key: 'received', color: 'stage-received', dotColor: '#3B82F6' },
-  { id: 'Pending', label: 'Pending', key: 'pending', color: 'stage-pending', dotColor: '#F59E0B' },
-  { id: 'In Progress', label: 'In Progress', key: 'in-progress', color: 'stage-in-progress', dotColor: '#10B981' },
-  { id: 'Work Progress State', label: 'Work Progress', key: 'work-progress', color: 'stage-work-progress', dotColor: '#8B5CF6' },
-  { id: 'On Hold', label: 'On Hold', key: 'on-hold', color: 'stage-on-hold', dotColor: '#F43F5E' },
-  { id: 'Completed', label: 'Completed', key: 'completed', color: 'stage-completed', dotColor: '#059669' },
+  { id: 'Pending', label: 'Pending', key: 'pending', color: 'stage-pending', dotColor: '#F59E0B', isDefault: true },
+  { id: 'Assigned', label: 'Assigned', key: 'assigned', color: 'stage-assigned', dotColor: '#3B82F6' },
+  { id: 'In Progress', label: 'In Progress', key: 'in-progress', color: 'stage-in-progress', dotColor: '#8B5CF6' },
+  { id: 'Hold', label: 'Hold', key: 'hold', color: 'stage-on-hold', dotColor: '#F43F5E' },
+  { id: 'Resolved', label: 'Resolved', key: 'resolved', color: 'stage-resolved', dotColor: '#10B981' },
+  { id: 'Closed', label: 'Closed (RWA/Resident)', key: 'closed', color: 'stage-closed', dotColor: '#64748B', rwaOnly: true },
 ];
+
+export const normalizeStatus = (status) => {
+  if (!status) return 'Pending';
+  if (status === 'Received Request') return 'Pending';
+  if (status === 'Work Progress State') return 'In Progress';
+  if (status === 'On Hold') return 'Hold';
+  if (status === 'Completed') return 'Resolved';
+  return status;
+};
 
 const DEFAULT_TECHNICIANS_LIST = [
   { id: 'TECH-001', name: 'Suresh Babu', skill: 'Electrical & AC', mobile: '+91 98765 00001' },
@@ -247,6 +265,37 @@ export default function Services({
   const [onHoldPromptRequest, setOnHoldPromptRequest] = useState(null);
   const [onHoldReasonInput, setOnHoldReasonInput] = useState('');
   const [toastMessage, setToastMessage] = useState('');
+
+  // Inspection Media / Photo Modal state (Service Task image popup)
+  const [photoModalRequest, setPhotoModalRequest] = useState(null);
+  const [photoModalTab, setPhotoModalTab] = useState('issue');
+  const [lightboxImage, setLightboxImage] = useState(null);
+
+  const openPhotoModal = (request, initialTab = 'issue') => {
+    setPhotoModalRequest(request);
+    setPhotoModalTab(initialTab);
+  };
+
+  const closePhotoModal = () => {
+    setPhotoModalRequest(null);
+    setLightboxImage(null);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (lightboxImage) {
+          setLightboxImage(null);
+        } else if (photoModalRequest) {
+          setPhotoModalRequest(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxImage, photoModalRequest]);
+
+  const currentModalMedia = photoModalRequest ? getRequestMedia(photoModalRequest) : null;
 
   // Form state for + Raise Complaint / Case Order
   const [newComplaintForm, setNewComplaintForm] = useState({
@@ -332,7 +381,7 @@ export default function Services({
         } else {
           matchesCategory = getServiceClassification(r) === selectedCategory;
         }
-        return matchesCategory && r.status === s.id;
+        return matchesCategory && (r.status === s.id || normalizeStatus(r.status) === s.id);
       }).length;
     });
     return counts;
@@ -354,8 +403,9 @@ export default function Services({
         matchesCategory = getServiceClassification(r) === selectedCategory;
       }
 
+      const rStatus = normalizeStatus(r.status);
       const matchesStage =
-        selectedStage === 'All' || r.status === selectedStage;
+        selectedStage === 'All' || r.status === selectedStage || rStatus === selectedStage;
 
       const q = searchQuery.toLowerCase().trim();
       const matchesSearch =
@@ -410,7 +460,7 @@ export default function Services({
         role: 'Primary Specialist (Lead)',
         assignedDate: new Date().toISOString().split('T')[0],
         targetDate: newComplaintForm.targetDate || '2026-10-25',
-        status: 'Received Request',
+        status: 'Pending',
         instructions: `Work Order ${newWorkOrderId}: Execute ${newComplaintForm.service}.`,
       },
     ] : [];
@@ -441,7 +491,7 @@ export default function Services({
       assignedDate: new Date().toISOString().split('T')[0],
       targetDate: newComplaintForm.targetDate || '2026-10-25',
       priority: newComplaintForm.priority,
-      status: 'Received Request',
+      status: 'Pending',
       holdReason: '',
       description: newComplaintForm.description,
       securityPassType: newComplaintForm.securityPassType,
@@ -639,7 +689,7 @@ export default function Services({
           assignedTechnicians: newAssignedTechnicians,
           assignedDate: primaryTech.assignedDate,
           targetDate: primaryTech.targetDate,
-          status: r.status === 'Received Request' ? 'In Progress' : r.status,
+          status: (r.status === 'Pending' || r.status === 'Received Request') ? 'Assigned' : r.status,
           auditTrail: [newAuditEntry, ...(r.auditTrail || [])],
         };
       }
@@ -660,7 +710,7 @@ export default function Services({
         assignedTechnicians: newAssignedTechnicians,
         assignedDate: primaryTech.assignedDate,
         targetDate: primaryTech.targetDate,
-        status: selectedRequest.status === 'Received Request' ? 'In Progress' : selectedRequest.status,
+        status: (selectedRequest.status === 'Pending' || selectedRequest.status === 'Received Request') ? 'Assigned' : selectedRequest.status,
         auditTrail: [newAuditEntry, ...(selectedRequest.auditTrail || [])],
       });
     }
@@ -671,55 +721,81 @@ export default function Services({
 
   // ── CRUD: Stage Transition ────────────────────────────────────────────────
   const handleStageChange = (req, newStage) => {
-    if (newStage === 'On Hold') {
+    if (newStage === 'Hold' || newStage === 'On Hold') {
       setOnHoldPromptRequest(req);
       setOnHoldReasonInput(req.holdReason || 'Awaiting materials / resident clearance');
       return;
     }
+
+    const auditAction = newStage === 'Closed' ? 'Closed by RWA/Residence' : `Stage: ${newStage}`;
+    const newAuditEntry = {
+      id: Date.now(),
+      action: auditAction,
+      detail: newStage === 'Closed' ? 'Case formally verified and marked Closed by RWA/Resident' : `Stage updated to ${newStage}`,
+      actor: newStage === 'Closed' ? (req.resident || 'RWA / Resident') : 'Agency Dispatcher',
+      timestamp: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      type: 'status',
+    };
 
     const updated = requests.map((r) =>
       r.id === req.id
         ? {
             ...r,
             status: newStage,
-            holdReason: newStage === 'Completed' ? '' : r.holdReason,
+            holdReason: ['Resolved', 'Closed', 'Completed'].includes(newStage) ? '' : r.holdReason,
+            auditTrail: [newAuditEntry, ...(r.auditTrail || [])],
           }
         : r
     );
     setRequests(updated);
     if (updateRequestStatus) updateRequestStatus(req.id, newStage);
     if (selectedRequest && selectedRequest.id === req.id) {
-      setSelectedRequest({ ...selectedRequest, status: newStage });
+      setSelectedRequest({
+        ...selectedRequest,
+        status: newStage,
+        auditTrail: [newAuditEntry, ...(selectedRequest.auditTrail || [])],
+      });
     }
-    showToast(`✓ ${req.id} moved to "${newStage}"`);
+    showToast(newStage === 'Closed' ? `✓ ${req.id} closed by RWA/Resident` : `✓ ${req.id} moved to "${newStage}"`);
   };
 
   const handleConfirmOnHold = (e) => {
     e.preventDefault();
     if (!onHoldPromptRequest) return;
 
+    const newAuditEntry = {
+      id: Date.now(),
+      action: 'Placed on Hold',
+      detail: onHoldReasonInput.trim() || 'Awaiting spare parts / clearance',
+      actor: 'Agency Dispatcher',
+      timestamp: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      type: 'status',
+    };
+
     const updated = requests.map((r) =>
       r.id === onHoldPromptRequest.id
         ? {
             ...r,
-            status: 'On Hold',
+            status: 'Hold',
             holdReason:
               onHoldReasonInput.trim() || 'Awaiting spare parts from store',
+            auditTrail: [newAuditEntry, ...(r.auditTrail || [])],
           }
         : r
     );
     setRequests(updated);
     if (updateRequestStatus)
-      updateRequestStatus(onHoldPromptRequest.id, 'On Hold');
+      updateRequestStatus(onHoldPromptRequest.id, 'Hold');
     if (selectedRequest && selectedRequest.id === onHoldPromptRequest.id) {
       setSelectedRequest({
         ...selectedRequest,
-        status: 'On Hold',
+        status: 'Hold',
         holdReason: onHoldReasonInput,
+        auditTrail: [newAuditEntry, ...(selectedRequest.auditTrail || [])],
       });
     }
     setOnHoldPromptRequest(null);
-    showToast(`✓ Marked ${onHoldPromptRequest.id} On Hold`);
+    showToast(`✓ Marked ${onHoldPromptRequest.id} on Hold`);
   };
 
   // ── CRUD: Edit Complaint & Work Order Workflow ─────────────────────────────
@@ -813,6 +889,45 @@ export default function Services({
     setEditingRequest((prev) => (prev ? { ...prev, techCount: count } : prev));
   };
 
+  const handleAddTechSlot = () => {
+    setEditingRequest((prev) => {
+      if (!prev) return prev;
+      const rawWo = prev.workOrderId || prev.id || 'WO-101';
+      const num = rawWo.replace(/[^0-9]/g, '') || '101';
+      const currentSlots = prev.slots || [];
+      const nextIndex = currentSlots.length;
+      const nextSoNum = String(nextIndex + 1).padStart(2, '0');
+      const techChoice = technicians[nextIndex % technicians.length] || technicians[0];
+      const newSlot = {
+        soId: `SO-${num}-${nextSoNum}`,
+        technicianId: techChoice?.id || 'TECH-001',
+        name: techChoice?.name || 'Technician',
+        role: nextIndex === 0 ? 'Primary Specialist (Lead)' : nextIndex === 1 ? 'Co-Specialist / Assistant' : 'Support Specialist',
+        instructions: `Work Order ${rawWo}: Field directive for technician ${nextIndex + 1}.`,
+        assignedDate: prev.assignedDate || new Date().toISOString().split('T')[0],
+        targetDate: prev.targetDate || '2026-10-25',
+      };
+      const updatedSlots = [...currentSlots, newSlot];
+      return {
+        ...prev,
+        slots: updatedSlots,
+        techCount: updatedSlots.length,
+      };
+    });
+  };
+
+  const handleRemoveTechSlot = (indexToRemove) => {
+    setEditingRequest((prev) => {
+      if (!prev || (prev.slots || []).length <= 1) return prev;
+      const updatedSlots = prev.slots.filter((_, idx) => idx !== indexToRemove);
+      return {
+        ...prev,
+        slots: updatedSlots,
+        techCount: updatedSlots.length,
+      };
+    });
+  };
+
   const handleAddMaterialItem = () => {
     if (!newMaterialInput.name.trim()) return;
     setEditingRequest((prev) => {
@@ -881,8 +996,15 @@ export default function Services({
     e.preventDefault();
     if (!editingRequest) return;
 
-    const count = editingRequest.techCount || 1;
-    const activeSlots = (editingRequest.slots || []).slice(0, count);
+    const activeSlots = (editingRequest.slots && editingRequest.slots.length > 0)
+      ? editingRequest.slots
+      : [{
+          soId: 'SO-101-01',
+          technicianId: technicians[0]?.id || 'TECH-001',
+          role: 'Primary Specialist (Lead)',
+          instructions: '',
+        }];
+    const count = activeSlots.length;
 
     const newAssignedTechnicians = activeSlots.map((slot, idx) => {
       const techObj = technicians.find((t) => t.id === slot.technicianId) || {
@@ -1160,9 +1282,9 @@ export default function Services({
             <table className="svc-table data-table">
               <thead>
                 <tr>
-                  <th>Request ID</th>
-                  <th>Service Task</th>
-                  <th>Resident &amp; Unit</th>
+                  <th>Work Order ID</th>
+                  <th>Service Type</th>
+                  <th>Location</th>
                   <th>Assigned Specialist</th>
                   <th>Priority</th>
                   <th>Current Stage</th>
@@ -1172,15 +1294,36 @@ export default function Services({
               <tbody>
                 {filteredRequests.map((req) => {
                   const stageObj =
-                    STAGES.find((s) => s.id === req.status) || STAGES[1];
+                    STAGES.find((s) => s.id === req.status) ||
+                    STAGES.find((s) => s.id === normalizeStatus(req.status)) ||
+                    STAGES[0];
                   const priorityKey = (req.priority || 'normal').toLowerCase();
+                  const statusLabel = req.status || 'Pending';
+                  const statusClass =
+                    statusLabel === 'Pending'
+                      ? 'status-pending'
+                      : statusLabel === 'Assigned'
+                        ? 'status-assigned'
+                        : statusLabel === 'In Progress' || statusLabel === 'Work Progress State'
+                          ? 'status-progress'
+                          : statusLabel === 'Hold' || statusLabel === 'On Hold'
+                            ? 'status-hold'
+                            : statusLabel === 'Resolved'
+                              ? 'status-resolved'
+                              : statusLabel === 'Closed'
+                                ? 'status-closed'
+                                : 'status-completed';
+
+                  const classification = getServiceClassification(req);
+                  const media = getRequestMedia(req);
+                  const assigned = getAssignedTechs(req);
 
                   return (
                     <tr key={req.id}>
-                      {/* 1. Request / Case Identity */}
+                      {/* 1. Work Order ID (WO_1454 / REQ-1001) */}
                       <td>
                         <div
-                          className="svc-id-cell"
+                          className="table-wo-cell"
                           style={{ cursor: 'pointer' }}
                           title="View complaint & work order dossier"
                           onClick={() => {
@@ -1188,48 +1331,57 @@ export default function Services({
                             setModalTab('overview');
                           }}
                         >
-                          <span className="svc-id-text">{req.id}</span>
-                          <span
-                            className="svc-case-order-chip"
-                            title="Case Order raised by RWA/Residence"
-                          >
-                            {req.caseOrderId || 'CASE-101'}
+                          <span className="table-wo-badge">
+                            {req.workOrderId || req.id || 'WO-101'}
                           </span>
+                          <span className="sr-only">{req.id}</span>
                         </div>
                       </td>
 
-                      {/* 2. Service Task with Classification Tag */}
+                      {/* 2. Service Type (Image & Electrical) */}
                       <td>
-                        {(() => {
-                          const classification = getServiceClassification(req);
-                          return (
-                            <div className="svc-service-cell">
-                              <div className="svc-service-title-row">
-                                <span className="svc-service-name">{req.service}</span>
-                                <span
-                                  className={`svc-classification-tag tag-${classification.toLowerCase().replace(/\s+/g, '-')}`}
-                                  title={`Classified as: ${classification} (${req.category || 'Technicians'})`}
-                                >
-                                  {classification === 'Electrical' && <SlimZap size={11} strokeWidth={1.6} />}
-                                  {classification === 'Plumbing' && <SlimDroplet size={11} strokeWidth={1.6} />}
-                                  {classification === 'Cleaning' && <SlimSparkles size={11} strokeWidth={1.6} />}
-                                  {classification === 'Civil' && <SlimHammer size={11} strokeWidth={1.6} />}
-                                  {classification === 'Security' && <SlimShield size={11} strokeWidth={1.6} />}
-                                  <span>{classification}</span>
-                                </span>
-                              </div>
-                              <div
-                                className="svc-service-sub"
-                                title={req.caseTitle || req.description}
-                              >
-                                {req.caseTitle || req.description || '—'}
-                              </div>
+                        <div className="table-service-cell">
+                          <div className="table-service-title-row">
+                            <strong className="table-row-title">{req.service}</strong>
+                          </div>
+
+                          <span className="sr-only">{req.caseTitle || req.description}</span>
+
+                          {/* Issue Photo Thumbnail & IN/OUT Preview Pill (Dashboard UI) */}
+                          <div className="table-issue-inout-bar">
+                            <div
+                              className="table-issue-thumb-wrapper"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openPhotoModal(req, 'issue');
+                              }}
+                              title="Click to view Issue & Inspection Photos popup"
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  openPhotoModal(req, 'issue');
+                                }
+                              }}
+                            >
+                              <img
+                                src={media.issueImage}
+                                alt={`Issue defect for ${req.id}`}
+                                className="table-issue-thumb-img"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                              <span className="table-issue-thumb-badge">
+                                Issue
+                              </span>
                             </div>
-                          );
-                        })()}
+                          </div>
+                        </div>
                       </td>
 
-                      {/* 3. Resident & Unit */}
+                      {/* 3. Location (Kavya Sharma -101 · Surya Enclave) */}
                       <td>
                         <div className="svc-resident-cell">
                           <div className="svc-avatar-circle">
@@ -1249,51 +1401,38 @@ export default function Services({
                         </div>
                       </td>
 
-                      {/* 4. Assigned Specialist (Multi-Tech with so1-id, so2-id, so3-id) */}
+                      {/* 4. Assigned Specialist (SO-041-01 Suresh Babu, SO-041-02 Kiran Rao) */}
                       <td>
-                        <div className="svc-tech-cell">
-                          {(() => {
-                            const assigned = getAssignedTechs(req);
-                            if (assigned.length > 0) {
-                              return (
-                                <div className="svc-tech-multi-stack">
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
-                                    <span className="svc-work-order-chip" title="Linked Agency Work Order">
-                                      {req.workOrderId || 'WO-101'}
-                                    </span>
-                                    {assigned.length > 1 && (
-                                      <span className="svc-tech-count-chip" title={`${assigned.length} Technicians Assigned under this Work Order`}>
-                                        <SlimUsers size={10} /> {assigned.length} Techs
-                                      </span>
-                                    )}
-                                  </div>
-                                  {assigned.map((t, idx) => (
-                                    <div key={t.soId || idx} className="svc-tech-single-row">
-                                      <span
-                                        className={`svc-so-badge ${idx === 0 ? 'svc-so-badge-lead' : ''}`}
-                                        title={`Service Order ID (${idx === 0 ? 'so1-id' : idx === 1 ? 'so2-id' : 'so3-id'}): ${t.soId}`}
-                                      >
-                                        {t.soId}
-                                      </span>
-                                      <strong title={`${t.name} — ${t.role || t.skill}`}>{t.name}</strong>
-                                    </div>
-                                  ))}
-                                </div>
-                              );
-                            }
-                            return (
-                              <button
-                                type="button"
-                                className="svc-unassigned-badge"
-                                onClick={() => openAllocateModal(req)}
-                                title="Click to allocate technicians (1, 2, or 3 specialists)"
-                              >
-                                <SlimPlus size={12} strokeWidth={1.6} />
-                                <span>Assign Staff (SO-1/2/3)</span>
-                              </button>
-                            );
-                          })()}
-                        </div>
+                        {assigned.length > 0 ? (
+                          <div className="svc-tech-multi-stack">
+                            {assigned.map((t, idx) => (
+                              <div key={t.soId || idx} className="svc-tech-single-row">
+                                <span
+                                  className={`svc-so-badge ${idx === 0 ? 'svc-so-badge-lead' : ''}`}
+                                  title={`Service Order: ${t.soId}`}
+                                >
+                                  {t.soId || `SO-0${idx + 1}`}
+                                </span>
+                                <strong title={`${t.name} — ${t.role || t.skill}`}>{t.name}</strong>
+                              </div>
+                            ))}
+                          </div>
+                        ) : req.technician && req.technician !== 'Unassigned' ? (
+                          <span className="table-specialist-item">
+                            <span style={{ color: '#16A34A' }}>●</span>
+                            {req.technician}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            className="svc-unassigned-badge"
+                            onClick={() => openAllocateModal(req)}
+                            title="Click to allocate technicians (1, 2, or 3 specialists)"
+                          >
+                            <SlimPlus size={12} strokeWidth={1.6} />
+                            <span>Assign Staff (SO-1/2/3)</span>
+                          </button>
+                        )}
                       </td>
 
                       {/* 5. Priority */}
@@ -1307,32 +1446,20 @@ export default function Services({
                       {/* 6. Current Stage */}
                       <td>
                         <div className="svc-stage-cell">
-                          <span
-                            className={`svc-stage-pill ${stageObj.color}`}
-                            title={`Status: ${stageObj.label}`}
-                          >
-                            ● {stageObj.label}
+                          <span className={`status-badge ${statusClass}`} title={`Status: ${statusLabel}`}>
+                            {statusLabel}
                           </span>
                         </div>
-                        {req.status === 'On Hold' && req.holdReason && (
-                          <div
-                            className="svc-hold-reason-tip"
-                            title={`On Hold Reason: ${req.holdReason}`}
-                          >
-                            <SlimAlertCircle size={11} strokeWidth={1.5} />
-                            <span>{req.holdReason}</span>
-                          </div>
-                        )}
                       </td>
 
                       {/* 7. Action Icons (Edit) */}
                       <td style={{ textAlign: 'right' }}>
-                        <div className="svc-actions-group">
+                        <div className="svc-actions-group" style={{ justifyContent: 'flex-end' }}>
                           <button
                             type="button"
                             className="svc-action-icon-btn svc-action-edit"
                             title="Edit complaint"
-                            aria-label="Edit complaint"
+                            aria-label={`Edit complaint ${req.id}`}
                             onClick={() => openEditModal(req)}
                           >
                             <SlimPencil size={14} strokeWidth={1.5} />
@@ -1376,7 +1503,7 @@ export default function Services({
       {viewMode === 'pipeline' && (
         <div className="svc-pipeline-board">
           {STAGES.map((stg) => {
-            const columnItems = filteredRequests.filter((r) => r.status === stg.id);
+            const columnItems = filteredRequests.filter((r) => r.status === stg.id || normalizeStatus(r.status) === stg.id);
 
             return (
               <div key={stg.id} className="svc-pipeline-column">
@@ -1430,7 +1557,24 @@ export default function Services({
                         </span>
                       </div>
 
-                      <h4 className="svc-card-title">{req.service}</h4>
+                      <div className="svc-kanban-title-row">
+                        <h4 className="svc-card-title">{req.service}</h4>
+                        <button
+                          type="button"
+                          className="svc-task-photo-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openPhotoModal(req, 'issue');
+                          }}
+                          title="Click to view Issue & Inspection Photos popup"
+                          aria-label={`View inspection photo popup for ${req.id}`}
+                        >
+                          <span className="svc-task-photo-thumb-wrap">
+                            <SlimImage size={11} className="svc-task-photo-icon-overlay" />
+                          </span>
+                          <span className="svc-task-photo-label">Photo</span>
+                        </button>
+                      </div>
 
                       <div className="svc-card-resident">
                         <SlimMapPin size={12} strokeWidth={1.5} />
@@ -1729,7 +1873,7 @@ export default function Services({
                     </div>
                   </div>
 
-                  {selectedRequest.status === 'On Hold' && selectedRequest.holdReason && (
+                  {(selectedRequest.status === 'Hold' || selectedRequest.status === 'On Hold') && selectedRequest.holdReason && (
                     <div className="svc-hold-banner">
                       <strong>On-Hold Reason:</strong> {selectedRequest.holdReason}
                     </div>
@@ -2303,10 +2447,8 @@ export default function Services({
                         })
                       }
                     >
-                      <option value="Low">Low</option>
                       <option value="Normal">Normal</option>
-                      <option value="High">High</option>
-                      <option value="Emergency">Emergency</option>
+                      <option value="Urgent">Urgent</option>
                     </select>
                   </div>
 
@@ -2624,27 +2766,25 @@ export default function Services({
         </div>
       )}
 
-      {/* ── MODAL 5: COMPREHENSIVE WORK ORDER & CASE EDIT WORKFLOW MODAL ─── */}
+      {/* ── MODAL 5: STREAMLINED ASSIGNMENT & DISPATCH MODAL (NO SUBTITLES, PRO UI) ─── */}
       {isEditModalOpen && editingRequest && (
         <div className="svc-modal-backdrop" onClick={() => setIsEditModalOpen(false)}>
           <div
-            className="svc-modal svc-modal-xl"
+            className="svc-modal svc-edit-modal-pro"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="svc-modal-header">
-              <div>
-                <span className="svc-modal-eyebrow">
-                  CASE ORDER &amp; WORK ORDER DISPATCH WORKFLOW
-                </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            {/* Simple Clean Header Without Any Subtitle */}
+            <div className="svc-modal-header svc-edit-header-clean">
+              <div className="svc-edit-header-title-box">
+                <div className="svc-edit-header-main">
                   <h3 className="svc-modal-title">
-                    Edit {editingRequest.id} · {editingRequest.service}
+                    {editingRequest.id} · {editingRequest.service}
                   </h3>
-                  <span className="svc-case-order-chip" title="Linked Resident / RWA Case Order">
+                  <span className="svc-case-order-chip" title="Case Order">
                     {editingRequest.caseOrderId || 'CASE-101'}
                   </span>
-                  <span className="svc-work-order-chip" title="Linked Agency Work Order">
-                    {editingRequest.workOrderId || 'WO-101'}
+                  <span className="svc-work-order-chip" title="Work Order">
+                    {editingRequest.workOrderId || 'WO-101-A'}
                   </span>
                 </div>
               </div>
@@ -2658,506 +2798,333 @@ export default function Services({
               </button>
             </div>
 
-            {/* Workflow Navigation Strip */}
-            <div className="svc-modal-tabs-strip">
-              <button
-                type="button"
-                className={`svc-modal-tab-btn ${editModalTab === 'all' ? 'active' : ''}`}
-                onClick={() => setEditModalTab('all')}
-              >
-                All Details &amp; Workflow
-              </button>
-              <button
-                type="button"
-                className={`svc-modal-tab-btn ${editModalTab === 'inbound' ? 'active' : ''}`}
-                onClick={() => setEditModalTab('inbound')}
-              >
-                1. From Resident / RWA (Origin, Location, Photos)
-              </button>
-              <button
-                type="button"
-                className={`svc-modal-tab-btn ${editModalTab === 'agency' ? 'active' : ''}`}
-                onClick={() => setEditModalTab('agency')}
-              >
-                2. Our Part (Materials &amp; Multi-Tech Allocation)
-              </button>
-            </div>
+            <form onSubmit={handleEditSubmit} className="svc-edit-form-pro">
+              <div className="svc-edit-modal-body-pro">
+                {/* 2-Column Grid: Left = Inbound Read-Only, Right = Agent Editable */}
+                <div className="svc-edit-layout-grid">
 
-            <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-              <div className="svc-modal-body" style={{ maxHeight: '72vh', overflowY: 'auto' }}>
-                <div className="svc-edit-grid">
-                  {/* ─────────────────────────────────────────────────────────────
-                      SECTION 1: INBOUND DETAILS (FROM RESIDENT / RWA)
-                  ───────────────────────────────────────────────────────────── */}
-                  {(editModalTab === 'all' || editModalTab === 'inbound') && (
-                    <div className="svc-edit-section svc-edit-inbound-card">
-                      <div className="svc-edit-section-header">
-                        <div className="svc-edit-sec-icon-blue">
-                          <SlimFileText size={18} />
+                  {/* LEFT: Inbound Complaint Details (ALL NOT EDITABLE) */}
+                  <div className="svc-inbound-readonly-panel">
+                    <div className="svc-panel-title-bar">
+                      <span className="svc-panel-title">Inbound Complaint</span>
+                      <span className="svc-readonly-tag">Read-Only</span>
+                    </div>
+
+                    <div className="svc-inbound-readonly-content">
+                      {/* Priority, Category, Origin Tags */}
+                      <div className="svc-readonly-tags-row">
+                        <span className={`svc-priority-dot-badge priority-${(editingRequest.priority || 'normal').toLowerCase()}`}>
+                          <span className="svc-p-dot" />
+                          <span>{editingRequest.priority || 'Normal'} Priority</span>
+                        </span>
+                        <span className={`svc-classification-tag tag-${getServiceClassification(editingRequest).toLowerCase().replace(/\s+/g, '-')}`}>
+                          {getServiceClassification(editingRequest)}
+                        </span>
+                        <span className="svc-origin-badge">
+                          From: {editingRequest.raisedBy || 'Residence'}
+                        </span>
+                      </div>
+
+                      {/* Case Title & Problem Description */}
+                      <div className="svc-readonly-block">
+                        <span className="svc-readonly-label">Reported Issue</span>
+                        <div className="svc-readonly-issue-title">
+                          {editingRequest.caseTitle || editingRequest.service}
                         </div>
-                        <div>
-                          <h4 className="svc-edit-sec-title">1. From Resident / RWA</h4>
-                          <p className="svc-edit-sec-subtitle">
-                            Inbound complaint origin, resident identity &amp; reported problem
-                          </p>
+                        <div className="svc-readonly-desc">
+                          {editingRequest.description || 'No detailed description provided by resident.'}
                         </div>
                       </div>
 
-                      {/* Origin Source & Identity */}
-                      <div className="svc-edit-subcard">
-                        <span className="svc-edit-subcard-title">
-                          Ticket Origin &amp; Originator
-                        </span>
-                        <div className="svc-edit-origin-pills">
-                          {['Residence', 'RWA Office', 'Security Desk'].map((src) => (
-                            <button
-                              key={src}
-                              type="button"
-                              className={`svc-origin-pill-btn ${editingRequest.raisedBy === src ? 'active' : ''}`}
-                              onClick={() => setEditingRequest({ ...editingRequest, raisedBy: src })}
-                            >
-                              {src}
-                            </button>
-                          ))}
+                      {/* Originator / Resident Contact */}
+                      <div className="svc-readonly-info-grid">
+                        <div className="svc-readonly-info-item">
+                          <span className="svc-readonly-label">Resident Name</span>
+                          <span className="svc-readonly-val">{editingRequest.resident || 'Kavya Sharma'}</span>
                         </div>
-
-                        <div className="svc-form-row-2">
-                          <div className="svc-form-group">
-                            <label>Resident / Originator Name</label>
-                            <input
-                              type="text"
-                              className="svc-form-input"
-                              value={editingRequest.resident || ''}
-                              onChange={(e) =>
-                                setEditingRequest({ ...editingRequest, resident: e.target.value })
-                              }
-                              placeholder="e.g. Kavya Sharma"
-                            />
-                          </div>
-
-                          <div className="svc-form-group">
-                            <label>Resident Mobile Number</label>
-                            <input
-                              type="text"
-                              className="svc-form-input"
-                              value={editingRequest.residentPhone || ''}
-                              onChange={(e) =>
-                                setEditingRequest({ ...editingRequest, residentPhone: e.target.value })
-                              }
-                              placeholder="+91 98765 43210"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="svc-form-row-2">
-                          <div className="svc-form-group">
-                            <label>Case Order ID</label>
-                            <input
-                              type="text"
-                              className="svc-form-input"
-                              value={editingRequest.caseOrderId || ''}
-                              onChange={(e) =>
-                                setEditingRequest({ ...editingRequest, caseOrderId: e.target.value })
-                              }
-                            />
-                          </div>
-                          <div className="svc-form-group">
-                            <label>Category</label>
-                            <select
-                              className="svc-form-select"
-                              value={editingRequest.category || 'Technicians'}
-                              onChange={(e) =>
-                                setEditingRequest({ ...editingRequest, category: e.target.value })
-                              }
-                            >
-                              <option value="Technicians">Technicians</option>
-                              <option value="Security">Security</option>
-                              <option value="Daily Works">Daily Works</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div className="svc-form-group">
-                          <label>Complaint / Case Title</label>
-                          <input
-                            type="text"
-                            className="svc-form-input"
-                            value={editingRequest.caseTitle || ''}
-                            onChange={(e) =>
-                              setEditingRequest({ ...editingRequest, caseTitle: e.target.value })
-                            }
-                            placeholder="e.g. Main Power Distribution & Socket Sparks"
-                          />
-                        </div>
-
-                        <div className="svc-form-group" style={{ marginBottom: 0 }}>
-                          <label>Problem Description from Resident</label>
-                          <textarea
-                            rows={3}
-                            className="svc-form-textarea"
-                            value={editingRequest.description || ''}
-                            onChange={(e) =>
-                              setEditingRequest({ ...editingRequest, description: e.target.value })
-                            }
-                            placeholder="Detailed complaint description lodged by resident..."
-                          />
+                        <div className="svc-readonly-info-item">
+                          <span className="svc-readonly-label">Contact</span>
+                          <span className="svc-readonly-val">{editingRequest.residentPhone || '+91 98765 43210'}</span>
                         </div>
                       </div>
 
-                      {/* 2. Where, Location, Date & Time (d & t) */}
-                      <div className="svc-edit-subcard">
-                        <span className="svc-edit-subcard-title">
-                          <SlimMapPin size={13} /> 2. Where, Location, Date &amp; Time (d &amp; t)
-                        </span>
-
-                        <div className="svc-form-row-2">
-                          <div className="svc-form-group">
-                            <label>Society / Apartment</label>
-                            <input
-                              type="text"
-                              className="svc-form-input"
-                              value={editingRequest.apartment || ''}
-                              onChange={(e) =>
-                                setEditingRequest({ ...editingRequest, apartment: e.target.value })
-                              }
-                              placeholder="e.g. Surya Enclave"
-                            />
-                          </div>
-
-                          <div className="svc-form-group">
-                            <label>Tower / Wing / Block</label>
-                            <input
-                              type="text"
-                              className="svc-form-input"
-                              value={editingRequest.tower || ''}
-                              onChange={(e) =>
-                                setEditingRequest({ ...editingRequest, tower: e.target.value })
-                              }
-                              placeholder="e.g. Tower A"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="svc-form-row-2">
-                          <div className="svc-form-group">
-                            <label>Flat / Unit No</label>
-                            <input
-                              type="text"
-                              className="svc-form-input"
-                              value={editingRequest.flatNo || ''}
-                              onChange={(e) =>
-                                setEditingRequest({ ...editingRequest, flatNo: e.target.value })
-                              }
-                              placeholder="e.g. A-101"
-                            />
-                          </div>
-
-                          <div className="svc-form-group">
-                            <label>Specific Spot / Location</label>
-                            <input
-                              type="text"
-                              className="svc-form-input"
-                              value={editingRequest.specificLocation || ''}
-                              onChange={(e) =>
-                                setEditingRequest({ ...editingRequest, specificLocation: e.target.value })
-                              }
-                              placeholder="e.g. Master Bedroom & Switchboard"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Date & Time (d & t) */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                          <div className="svc-form-group">
-                            <label>
-                              <SlimCalendar size={12} style={{ marginRight: '4px' }} /> Reported Date
-                            </label>
-                            <input
-                              type="date"
-                              className="svc-form-input"
-                              value={editingRequest.reportedDate || ''}
-                              onChange={(e) =>
-                                setEditingRequest({ ...editingRequest, reportedDate: e.target.value })
-                              }
-                            />
-                          </div>
-
-                          <div className="svc-form-group">
-                            <label>
-                              <SlimClock size={12} style={{ marginRight: '4px' }} /> Reported Time
-                            </label>
-                            <input
-                              type="time"
-                              className="svc-form-input"
-                              value={editingRequest.reportedTime || '09:15'}
-                              onChange={(e) =>
-                                setEditingRequest({ ...editingRequest, reportedTime: e.target.value })
-                              }
-                            />
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '8px' }}>
-                          <div className="svc-form-group">
-                            <label>Priority</label>
-                            <select
-                              className="svc-form-select"
-                              value={editingRequest.priority || 'Normal'}
-                              onChange={(e) =>
-                                setEditingRequest({ ...editingRequest, priority: e.target.value })
-                              }
-                            >
-                              <option value="Low">Low</option>
-                              <option value="Normal">Normal</option>
-                              <option value="High">High</option>
-                              <option value="Emergency">Emergency</option>
-                            </select>
-                          </div>
-
-                          <div className="svc-form-group">
-                            <label>Target SLA Date</label>
-                            <input
-                              type="date"
-                              className="svc-form-input"
-                              value={editingRequest.targetDate || ''}
-                              onChange={(e) =>
-                                setEditingRequest({ ...editingRequest, targetDate: e.target.value })
-                              }
-                            />
-                          </div>
-
-                          <div className="svc-form-group">
-                            <label>Target SLA Time</label>
-                            <input
-                              type="time"
-                              className="svc-form-input"
-                              value={editingRequest.targetTime || '17:00'}
-                              onChange={(e) =>
-                                setEditingRequest({ ...editingRequest, targetTime: e.target.value })
-                              }
-                            />
-                          </div>
+                      {/* Location Details */}
+                      <div className="svc-readonly-block">
+                        <span className="svc-readonly-label">Location Details</span>
+                        <div className="svc-readonly-location-box">
+                          <SlimMapPin size={13} style={{ color: '#2563EB', flexShrink: 0 }} />
+                          <span>
+                            {editingRequest.apartment || 'Surya Enclave'} · {editingRequest.tower || 'Block A'} · Flat {editingRequest.flatNo || 'A-101'}
+                            {editingRequest.specificLocation ? ` (${editingRequest.specificLocation})` : ''}
+                          </span>
                         </div>
                       </div>
 
-                      {/* 3. Image & Media (Defect Photos + Audio Note) */}
-                      <div className="svc-edit-subcard">
-                        <span className="svc-edit-subcard-title">
-                          <SlimImage size={13} /> 3. Images &amp; Inspection Media
-                        </span>
+                      {/* Work Date & SLA */}
+                      <div className="svc-readonly-info-grid">
+                        <div className="svc-readonly-info-item">
+                          <span className="svc-readonly-label">Reported Date</span>
+                          <span className="svc-readonly-val">
+                            <SlimCalendar size={12} style={{ marginRight: '4px' }} />
+                            {editingRequest.reportedDate || editingRequest.assignedDate || '2026-10-11'}
+                          </span>
+                        </div>
+                        <div className="svc-readonly-info-item">
+                          <span className="svc-readonly-label">Target SLA Date</span>
+                          <span className="svc-readonly-val">
+                            <SlimClock size={12} style={{ marginRight: '4px' }} />
+                            {editingRequest.targetDate || '2026-10-25'}
+                          </span>
+                        </div>
+                      </div>
 
-                        <div className="svc-edit-images-grid">
-                          {(editingRequest.images || []).map((imgUrl, idx) => (
-                            <div
-                              key={idx}
-                              className="svc-edit-img-thumb"
-                              title="Click to view enlarged image"
-                              onClick={() => setPreviewImage(imgUrl)}
-                            >
-                              <img src={imgUrl} alt={`Defect inspect ${idx + 1}`} />
+                      {/* Inspection Photos (Clickable preview) */}
+                      <div className="svc-readonly-block">
+                        <div className="svc-readonly-img-header">
+                          <span className="svc-readonly-label">Inspection Photos</span>
+                          <span className="svc-readonly-img-count">
+                            {editingRequest.images?.length || 0} photo{(editingRequest.images?.length || 0) === 1 ? '' : 's'}
+                          </span>
+                        </div>
+                        {editingRequest.images && editingRequest.images.length > 0 ? (
+                          <div className="svc-readonly-gallery">
+                            {editingRequest.images.map((imgUrl, idx) => (
                               <button
+                                key={idx}
                                 type="button"
-                                className="svc-edit-img-remove"
-                                title="Remove photo"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRemoveImage(idx);
-                                }}
+                                className="svc-readonly-img-card"
+                                onClick={() => setPreviewImage(imgUrl)}
+                                title="Click to view enlarged photo"
                               >
-                                ×
+                                <img src={imgUrl} alt={`Complaint photo ${idx + 1}`} />
+                                <span className="svc-readonly-zoom-icon">
+                                  <SlimImage size={11} />
+                                </span>
                               </button>
-                            </div>
-                          ))}
-                        </div>
-
-                        {(!editingRequest.images || editingRequest.images.length === 0) && (
-                          <div style={{ fontSize: '0.74rem', color: '#64748B', fontStyle: 'italic' }}>
-                            No inspection photos attached.
+                            ))}
                           </div>
-                        )}
-
-                        <div className="svc-edit-add-img-box">
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <input
-                              type="text"
-                              className="svc-form-input"
-                              placeholder="Paste inspection photo URL..."
-                              value={newImageUrlInput}
-                              onChange={(e) => setNewImageUrlInput(e.target.value)}
-                              style={{ flex: 1, fontSize: '0.78rem' }}
-                            />
-                            <button
-                              type="button"
-                              className="svc-btn-pill-secondary"
-                              style={{ padding: '4px 10px', fontSize: '0.75rem' }}
-                              onClick={() => handleAddImage(newImageUrlInput)}
-                            >
-                              + Add Photo
-                            </button>
-                          </div>
-
-                          {/* Quick Photo Presets */}
-                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                            <button
-                              type="button"
-                              className="svc-btn-pill-secondary"
-                              style={{ padding: '2px 8px', fontSize: '0.7rem' }}
-                              onClick={() =>
-                                handleAddImage('https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=600&q=80')
-                              }
-                            >
-                              + Spark Defect
-                            </button>
-                            <button
-                              type="button"
-                              className="svc-btn-pill-secondary"
-                              style={{ padding: '2px 8px', fontSize: '0.7rem' }}
-                              onClick={() =>
-                                handleAddImage('https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=600&q=80')
-                              }
-                            >
-                              + Drain Leak
-                            </button>
-                            <button
-                              type="button"
-                              className="svc-btn-pill-secondary"
-                              style={{ padding: '2px 8px', fontSize: '0.7rem' }}
-                              onClick={() =>
-                                handleAddImage('https://images.unsplash.com/photo-1621905252507-b35492cc74b4?auto=format&fit=crop&w=600&q=80')
-                              }
-                            >
-                              + AC Outdoor
-                            </button>
-                            <button
-                              type="button"
-                              className="svc-btn-pill-secondary"
-                              style={{ padding: '2px 8px', fontSize: '0.7rem' }}
-                              onClick={() =>
-                                handleAddImage('https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=600&q=80')
-                              }
-                            >
-                              + Wall Crack
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Resident Voice Audio Note */}
-                        {editingRequest.audio && (
-                          <div style={{ marginTop: '8px', borderTop: '1px solid #E2E8F0', paddingTop: '8px' }}>
-                            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
-                              🎧 Attached Resident Voice Audio Memo:
-                            </div>
-                            <AudioVoicePlayer audio={editingRequest.audio} />
-                          </div>
+                        ) : (
+                          <div className="svc-readonly-no-img">No inspection photos attached.</div>
                         )}
                       </div>
                     </div>
-                  )}
+                  </div>
 
-                  {/* ─────────────────────────────────────────────────────────────
-                      SECTION 2: OUR PART (AGENCY EXECUTION & DISPATCH)
-                  ───────────────────────────────────────────────────────────── */}
-                  {(editModalTab === 'all' || editModalTab === 'agency') && (
-                    <div className="svc-edit-section svc-edit-agency-card">
-                      <div className="svc-edit-section-header">
-                        <div className="svc-edit-sec-icon-green">
-                          <SlimWrench size={18} />
+                  {/* RIGHT: Agent Fillable Panel (Technicians, Materials, Stage) */}
+                  <div className="svc-agent-editable-panel">
+                    <div className="svc-panel-title-bar">
+                      <span className="svc-panel-title">Agency Assignment &amp; Dispatch</span>
+                      <span className="svc-editable-tag">Agent Actions</span>
+                    </div>
+
+                    <div className="svc-agent-panel-content">
+                      {/* 1. Stage Dispatch Control Bar (Primary Lifecycle Control) */}
+                      <div className="svc-agent-section svc-stage-dispatch-bar-section">
+                        <div className="svc-stage-bar-row">
+                          <div className="svc-agent-sec-title">
+                            <SlimActivity size={14} style={{ color: '#D97706' }} />
+                            <span>Current Stage</span>
+                          </div>
+                          {editingRequest.status !== 'Assigned' && (
+                            <button
+                              type="button"
+                              className="svc-quick-stage-btn"
+                              onClick={() => setEditingRequest({ ...editingRequest, status: 'Assigned' })}
+                              title="Quick-set status to Assigned"
+                            >
+                              ✓ Set to Assigned
+                            </button>
+                          )}
                         </div>
-                        <div>
-                          <h4 className="svc-edit-sec-title">2. Our Part · Materials &amp; Technicians</h4>
-                          <p className="svc-edit-sec-subtitle">
-                            Parts requisition, multi-technician allocation (SO-1/2/3) &amp; lifecycle stage
-                          </p>
+
+                        <div className="svc-stage-select-box">
+                          <select
+                            className="svc-form-select svc-stage-dropdown-pro"
+                            value={editingRequest.status || 'Assigned'}
+                            onChange={(e) => setEditingRequest({ ...editingRequest, status: e.target.value })}
+                          >
+                            <option value="Pending">● Pending (Default)</option>
+                            <option value="Assigned">● Assigned</option>
+                            <option value="In Progress">● In Progress</option>
+                            <option value="Hold">● Hold</option>
+                            <option value="Resolved">● Resolved</option>
+                            <option value="Closed">● Closed (RWA / Residence)</option>
+                          </select>
+                        </div>
+
+                        {(editingRequest.status === 'Hold' || editingRequest.status === 'On Hold') && (
+                          <div className="svc-hold-reason-box" style={{ marginTop: '8px' }}>
+                            <label style={{ fontSize: '0.74rem', color: '#E11D48', fontWeight: 600 }}>
+                              Hold Reason *
+                            </label>
+                            <input
+                              type="text"
+                              className="svc-form-input"
+                              placeholder="e.g. Awaiting spare parts from store..."
+                              value={editingRequest.holdReason || ''}
+                              onChange={(e) => setEditingRequest({ ...editingRequest, holdReason: e.target.value })}
+                              style={{ borderColor: '#FDA4AF' }}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 2. Technicians with Dynamic "+ Add Technician" Button */}
+                      <div className="svc-agent-section">
+                        <div className="svc-agent-sec-head">
+                          <div className="svc-agent-sec-title">
+                            <SlimUsers size={14} style={{ color: '#2563EB' }} />
+                            <span>Assigned Technicians ({editingRequest.slots?.length || 1})</span>
+                          </div>
+                          <button
+                            type="button"
+                            className="svc-add-tech-btn"
+                            onClick={handleAddTechSlot}
+                            title="Add another technician to work order"
+                          >
+                            <SlimPlus size={12} />
+                            <span>Add Technician</span>
+                          </button>
+                        </div>
+
+                        {/* List of Technician Slots (1 to max) */}
+                        <div className="svc-tech-slots-list">
+                          {(editingRequest.slots || []).map((slot, idx) => (
+                            <div key={idx} className={`svc-tech-slot-card ${idx === 0 ? 'svc-tech-slot-lead' : ''}`}>
+                              <div className="svc-slot-card-header">
+                                <div className="svc-slot-card-badge-wrap">
+                                  <span className={`svc-so-badge ${idx === 0 ? 'svc-so-badge-lead' : ''}`}>
+                                    {slot.soId}
+                                  </span>
+                                  <span className="svc-slot-card-label">
+                                    {idx === 0 ? 'Primary Specialist (Lead)' : `Technician ${idx + 1}`}
+                                  </span>
+                                </div>
+                                {(editingRequest.slots || []).length > 1 && (
+                                  <button
+                                    type="button"
+                                    className="svc-remove-slot-btn"
+                                    onClick={() => handleRemoveTechSlot(idx)}
+                                    title="Remove this technician"
+                                    aria-label={`Remove technician ${idx + 1}`}
+                                  >
+                                    <SlimTrash size={12} />
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className="svc-slot-fields-grid">
+                                <div className="svc-form-group">
+                                  <label className="svc-slot-micro-label">Specialist</label>
+                                  <select
+                                    className="svc-form-select svc-tech-select-pro"
+                                    value={slot.technicianId}
+                                    onChange={(e) => handleEditSlotChange(idx, 'technicianId', e.target.value)}
+                                  >
+                                    {technicians.map((t) => (
+                                      <option key={t.id} value={t.id}>
+                                        {t.name} ({t.skill})
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <div className="svc-form-group">
+                                  <label className="svc-slot-micro-label">Role / Responsibility</label>
+                                  <input
+                                    type="text"
+                                    className="svc-form-input svc-tech-input-pro"
+                                    value={slot.role || ''}
+                                    onChange={(e) => handleEditSlotChange(idx, 'role', e.target.value)}
+                                    placeholder="e.g. Lead Specialist / Assistant"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="svc-form-group svc-directive-group">
+                                <label className="svc-slot-micro-label">Work Directive / Instructions</label>
+                                <input
+                                  type="text"
+                                  className="svc-form-input svc-tech-input-pro"
+                                  value={slot.instructions || ''}
+                                  onChange={(e) => handleEditSlotChange(idx, 'instructions', e.target.value)}
+                                  placeholder="Specific repair directive or safety precautions..."
+                                />
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
 
-                      {/* 1. Require - Material */}
-                      <div className="svc-edit-subcard">
-                        <span className="svc-edit-subcard-title">
-                          <SlimPackage size={13} /> 1. Required Materials &amp; Spare Parts Checklist
-                        </span>
+                      {/* 3. Materials Checklist (In case materials needed) */}
+                      <div className="svc-agent-section">
+                        <div className="svc-agent-sec-head">
+                          <div className="svc-agent-sec-title">
+                            <SlimPackage size={14} style={{ color: '#059669' }} />
+                            <span>Materials &amp; Spare Parts ({editingRequest.materials?.length || 0})</span>
+                          </div>
+                        </div>
 
-                        {(!editingRequest.materials || editingRequest.materials.length === 0) ? (
-                          <div style={{ fontSize: '0.74rem', color: '#64748B', fontStyle: 'italic' }}>
-                            No materials requested for this job yet. Add required items below.
+                        {/* Existing Materials List */}
+                        {editingRequest.materials && editingRequest.materials.length > 0 ? (
+                          <div className="svc-materials-compact-list">
+                            {editingRequest.materials.map((mat) => (
+                              <div key={mat.id} className="svc-mat-compact-row">
+                                <div className="svc-mat-info">
+                                  <strong className="svc-mat-name">{mat.name}</strong>
+                                  <span className="svc-mat-qty">{mat.qty}</span>
+                                </div>
+                                <div className="svc-mat-actions">
+                                  <select
+                                    className={`svc-mat-status-select svc-mat-status-${mat.status ? mat.status.toLowerCase().replace(/\s+/g, '-') : 'in-stock'}`}
+                                    value={mat.status}
+                                    onChange={(e) => handleMaterialStatusChange(mat.id, e.target.value)}
+                                  >
+                                    <option value="In Stock">In Stock</option>
+                                    <option value="To Procure">To Procure</option>
+                                    <option value="Issued to Tech">Issued to Tech</option>
+                                    <option value="Used / Fitted">Used / Fitted</option>
+                                  </select>
+                                  <button
+                                    type="button"
+                                    className="svc-mat-del-btn"
+                                    onClick={() => handleRemoveMaterialItem(mat.id)}
+                                    title="Remove part"
+                                    aria-label="Remove part"
+                                  >
+                                    <SlimTrash size={12} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         ) : (
-                          <table className="svc-material-table">
-                            <thead>
-                              <tr>
-                                <th>Item / Part</th>
-                                <th style={{ width: '80px' }}>Qty</th>
-                                <th style={{ width: '130px' }}>Status</th>
-                                <th style={{ width: '32px' }} />
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {editingRequest.materials.map((mat) => (
-                                <tr key={mat.id}>
-                                  <td>
-                                    <strong style={{ color: '#1E293B' }}>{mat.name}</strong>
-                                  </td>
-                                  <td>
-                                    <span style={{ fontSize: '0.75rem', color: '#475569' }}>{mat.qty}</span>
-                                  </td>
-                                  <td>
-                                    <select
-                                      className="svc-material-status-select"
-                                      value={mat.status}
-                                      onChange={(e) => handleMaterialStatusChange(mat.id, e.target.value)}
-                                    >
-                                      <option value="In Stock">🟢 In Stock</option>
-                                      <option value="To Procure">🟡 To Procure</option>
-                                      <option value="Issued to Tech">🔵 Issued to Tech</option>
-                                      <option value="Used / Fitted">⚪ Fitted / Used</option>
-                                    </select>
-                                  </td>
-                                  <td style={{ textAlign: 'right' }}>
-                                    <button
-                                      type="button"
-                                      className="svc-modal-close"
-                                      style={{ padding: '2px' }}
-                                      title="Remove material item"
-                                      onClick={() => handleRemoveMaterialItem(mat.id)}
-                                    >
-                                      <SlimTrash size={12} style={{ color: '#EF4444' }} />
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                          <div className="svc-mat-empty-hint">No parts requested yet. Add below if needed.</div>
                         )}
 
-                        {/* Add Material Item Form */}
-                        <div className="svc-material-add-form">
+                        {/* Add Material Row */}
+                        <div className="svc-add-mat-inline-row">
                           <input
                             type="text"
                             className="svc-form-input"
                             placeholder="Material / Part name..."
                             value={newMaterialInput.name}
-                            onChange={(e) =>
-                              setNewMaterialInput({ ...newMaterialInput, name: e.target.value })
-                            }
-                            style={{ fontSize: '0.76rem' }}
+                            onChange={(e) => setNewMaterialInput({ ...newMaterialInput, name: e.target.value })}
+                            style={{ flex: 2 }}
                           />
                           <input
                             type="text"
                             className="svc-form-input"
                             placeholder="Qty (e.g. 1 unit)"
                             value={newMaterialInput.qty}
-                            onChange={(e) =>
-                              setNewMaterialInput({ ...newMaterialInput, qty: e.target.value })
-                            }
-                            style={{ fontSize: '0.76rem' }}
+                            onChange={(e) => setNewMaterialInput({ ...newMaterialInput, qty: e.target.value })}
+                            style={{ flex: 1 }}
                           />
                           <select
                             className="svc-form-select"
                             value={newMaterialInput.status}
-                            onChange={(e) =>
-                              setNewMaterialInput({ ...newMaterialInput, status: e.target.value })
-                            }
-                            style={{ fontSize: '0.74rem' }}
+                            onChange={(e) => setNewMaterialInput({ ...newMaterialInput, status: e.target.value })}
+                            style={{ flex: 1 }}
                           >
                             <option value="In Stock">In Stock</option>
                             <option value="To Procure">To Procure</option>
@@ -3166,206 +3133,27 @@ export default function Services({
                           <button
                             type="button"
                             className="svc-btn-pill-primary"
-                            style={{ padding: '6px 10px', fontSize: '0.74rem' }}
                             onClick={handleAddMaterialItem}
+                            style={{ padding: '6px 14px', fontSize: '0.74rem' }}
                           >
                             + Add
                           </button>
                         </div>
-
-                        <div className="svc-form-group" style={{ margin: '4px 0 0' }}>
-                          <label style={{ fontSize: '0.72rem' }}>Material &amp; Requisition Notes</label>
-                          <textarea
-                            rows={1}
-                            className="svc-form-textarea"
-                            placeholder="Store procurement directives or vendor invoice references..."
-                            value={editingRequest.materialNotes || ''}
-                            onChange={(e) =>
-                              setEditingRequest({ ...editingRequest, materialNotes: e.target.value })
-                            }
-                          />
-                        </div>
                       </div>
 
-                      {/* 2. How many Technicians to Assign (Multi-Technician Assignment) */}
-                      <div className="svc-edit-subcard">
-                        <span className="svc-edit-subcard-title">
-                          <SlimUsers size={13} /> 2. How Many Technicians to Assign?
-                        </span>
-
-                        {/* Technician Count Toggle */}
-                        <div className="svc-tech-count-pills">
-                          <button
-                            type="button"
-                            className={`svc-tech-count-pill-btn ${editingRequest.techCount === 1 ? 'active' : ''}`}
-                            onClick={() => handleEditTechCountChange(1)}
-                          >
-                            <SlimUsers size={13} /> 1 Technician
-                          </button>
-                          <button
-                            type="button"
-                            className={`svc-tech-count-pill-btn ${editingRequest.techCount === 2 ? 'active' : ''}`}
-                            onClick={() => handleEditTechCountChange(2)}
-                          >
-                            <SlimUsers size={13} /> 2 Technicians
-                          </button>
-                          <button
-                            type="button"
-                            className={`svc-tech-count-pill-btn ${editingRequest.techCount === 3 ? 'active' : ''}`}
-                            onClick={() => handleEditTechCountChange(3)}
-                          >
-                            <SlimUsers size={13} /> 3 Technicians
-                          </button>
-                        </div>
-
-                        {/* Dynamic Technician Slots */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          {(editingRequest.slots || []).slice(0, editingRequest.techCount || 1).map((slot, idx) => {
-                            const soLabel = idx === 0 ? 'SO-1 · Primary Specialist (Lead)' : idx === 1 ? 'SO-2 · Co-Specialist / Assistant' : 'SO-3 · Support & Safety';
-                            return (
-                              <div key={idx} className="svc-edit-tech-slot-box">
-                                <div className="svc-edit-tech-slot-header">
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span className={`svc-so-badge ${idx === 0 ? 'svc-so-badge-lead' : ''}`}>
-                                      {slot.soId}
-                                    </span>
-                                    <strong style={{ fontSize: '0.78rem', color: '#1E293B' }}>
-                                      {soLabel}
-                                    </strong>
-                                  </div>
-                                </div>
-
-                                <div className="svc-form-row-2" style={{ gap: '8px' }}>
-                                  <div className="svc-form-group" style={{ marginBottom: 0 }}>
-                                    <label>Assigned Specialist</label>
-                                    <select
-                                      className="svc-form-select"
-                                      value={slot.technicianId}
-                                      onChange={(e) => handleEditSlotChange(idx, 'technicianId', e.target.value)}
-                                    >
-                                      {technicians.map((t) => (
-                                        <option key={t.id} value={t.id}>
-                                          {t.name} ({t.skill}) — {t.mobile}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </div>
-
-                                  <div className="svc-form-group" style={{ marginBottom: 0 }}>
-                                    <label>Role / Responsibility</label>
-                                    <input
-                                      type="text"
-                                      className="svc-form-input"
-                                      value={slot.role || ''}
-                                      onChange={(e) => handleEditSlotChange(idx, 'role', e.target.value)}
-                                      placeholder="e.g. Lead Electrician / Assistant"
-                                    />
-                                  </div>
-                                </div>
-
-                                <div className="svc-form-group" style={{ marginBottom: 0 }}>
-                                  <label>Task Instructions for {slot.soId}</label>
-                                  <textarea
-                                    rows={1}
-                                    className="svc-form-textarea"
-                                    value={slot.instructions || ''}
-                                    onChange={(e) => handleEditSlotChange(idx, 'instructions', e.target.value)}
-                                    placeholder="Execution directive for this technician..."
-                                  />
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* 3. All Workflow (Stage Pipeline & WO Info) */}
-                      <div className="svc-edit-subcard">
-                        <span className="svc-edit-subcard-title">
-                          <SlimActivity size={13} /> 3. Lifecycle Stage Pipeline &amp; Work Order
-                        </span>
-
-                        <div className="svc-form-row-2">
-                          <div className="svc-form-group" style={{ marginBottom: 0 }}>
-                            <label>Work Order ID</label>
-                            <input
-                              type="text"
-                              className="svc-form-input"
-                              value={editingRequest.workOrderId || ''}
-                              onChange={(e) =>
-                                setEditingRequest({ ...editingRequest, workOrderId: e.target.value })
-                              }
-                            />
-                          </div>
-
-                          <div className="svc-form-group" style={{ marginBottom: 0 }}>
-                            <label>Work Order Title</label>
-                            <input
-                              type="text"
-                              className="svc-form-input"
-                              value={editingRequest.workOrderTitle || ''}
-                              onChange={(e) =>
-                                setEditingRequest({ ...editingRequest, workOrderTitle: e.target.value })
-                              }
-                            />
-                          </div>
-                        </div>
-
-                        {/* Stage Pipeline Buttons */}
-                        <div>
-                          <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>
-                            Move Current Lifecycle Stage:
-                          </label>
-                          <div className="svc-stage-pipeline">
-                            {STAGES.map((s) => (
-                              <button
-                                key={s.id}
-                                type="button"
-                                className={`svc-stage-pipeline-btn ${editingRequest.status === s.id ? 'active' : ''}`}
-                                onClick={() => setEditingRequest({ ...editingRequest, status: s.id })}
-                              >
-                                <span style={{ color: s.dotColor, marginRight: '4px' }}>●</span>
-                                {s.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {editingRequest.status === 'On Hold' && (
-                          <div style={{ background: '#FFF1F2', border: '1px solid #FECDD3', borderRadius: '8px', padding: '8px 10px', marginTop: '6px' }}>
-                            <label style={{ color: '#E11D48', fontWeight: 700, fontSize: '0.74rem' }}>
-                              On-Hold Reason *
-                            </label>
-                            <input
-                              type="text"
-                              className="svc-form-input"
-                              style={{ borderColor: '#FDA4AF', marginTop: '4px' }}
-                              value={editingRequest.holdReason || ''}
-                              onChange={(e) =>
-                                setEditingRequest({ ...editingRequest, holdReason: e.target.value })
-                              }
-                              placeholder="e.g. Awaiting high-grade elastomer polymer sealant..."
-                            />
-                          </div>
-                        )}
-                      </div>
                     </div>
-                  )}
+                  </div>
+
                 </div>
               </div>
 
-              {/* Modal Footer Actions */}
-              <div
-                className="svc-modal-footer"
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              >
-                <div style={{ display: 'flex', gap: '8px' }}>
+              {/* Simple, Clear, Proficient Modal Footer */}
+              <div className="svc-modal-footer svc-edit-footer-pro">
+                <div className="svc-footer-left-actions">
                   <button
                     type="button"
                     className="svc-btn-pill-secondary"
                     style={{ color: '#E11D48', borderColor: '#FECDD3' }}
-                    title="Delete complaint"
-                    aria-label="Delete"
                     onClick={() => {
                       const id = editingRequest.id;
                       setIsEditModalOpen(false);
@@ -3378,8 +3166,6 @@ export default function Services({
                   <button
                     type="button"
                     className="svc-btn-pill-secondary"
-                    title="Allocate Specialist"
-                    aria-label="Allocate"
                     onClick={() => {
                       const r = editingRequest;
                       setIsEditModalOpen(false);
@@ -3391,7 +3177,7 @@ export default function Services({
                   </button>
                 </div>
 
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="svc-footer-right-actions">
                   <button
                     type="button"
                     className="svc-btn-pill-secondary"
@@ -3399,7 +3185,10 @@ export default function Services({
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="svc-btn-pill-primary">
+                  <button
+                    type="submit"
+                    className="svc-btn-pill-primary"
+                  >
                     Save Changes &amp; Dispatch
                   </button>
                 </div>
@@ -3473,6 +3262,21 @@ export default function Services({
           </div>
         </div>
       )}
+
+      {/* ── Inspection Media & Issue Photos Popup Modal ── */}
+      <InspectionMediaModal
+        photoModalRequest={photoModalRequest}
+        currentModalMedia={currentModalMedia}
+        photoModalTab={photoModalTab}
+        setPhotoModalTab={setPhotoModalTab}
+        closePhotoModal={closePhotoModal}
+        lightboxImage={lightboxImage}
+        setLightboxImage={setLightboxImage}
+        onNavigateServices={() => {
+          setSelectedRequest(photoModalRequest);
+          closePhotoModal();
+        }}
+      />
 
       {/* ── Floating Toast Feedback ──────────────────────────────────────── */}
       {toastMessage && (

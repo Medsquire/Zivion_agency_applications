@@ -540,7 +540,7 @@ function buildUnitDossier(society, tower, floorNum, flatIdx, overrideStatus) {
         id: `REQ-${flatNumber}-01`,
         service: 'Electrical Repair & Switchboard Inspection',
         status: 'In Progress',
-        priority: 'High',
+        priority: 'Urgent',
         assignedTech: 'Suresh Babu (+91 98765 11223)',
         dateRaised: '2026-10-18',
         description: 'Main master bedroom circuit trip when heavy load appliance is turned on.',
@@ -1422,21 +1422,7 @@ export default function Properties() {
             ))}
           </div>
 
-          {/* Society Technicians Strip */}
-          {activeSociety.technicians && activeSociety.technicians.length > 0 && (
-            <div className="cp-society-techs-section" style={{ marginTop: '24px' }}>
-              <div style={{ fontSize: '0.84rem', fontWeight: 600, color: '#64748B', marginBottom: '8px' }}>
-                Service technicians for this society:
-              </div>
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                {activeSociety.technicians.map((t) => (
-                  <span key={t.name} className="cp-badge-pill" style={{ background: '#F1F5F9', padding: '6px 12px', borderRadius: '6px', fontSize: '0.82rem' }}>
-                    <strong>{t.name}</strong> ({t.specialty || t.skill}) · {t.phone}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+       
         </div>
       )}
 
@@ -1715,15 +1701,7 @@ export default function Properties() {
             {/* Body */}
             <div className="cp-modal-body">
               {/* 3rd-Party Application Synchronization Banner */}
-              <div className="cp-third-party-banner">
-                <span className="cp-third-party-pill">3rd-Party App Sync</span>
-                <span>
-                  Resident tenancy &amp; maintenance dues are maintained in the third-party application.
-                  {activeDossier.tickets && activeDossier.tickets.length > 0
-                    ? ` Active service request raised from third-party app — displaying service work order.`
-                    : ` Service requests raised from the third-party app will appear here in Lite Orange or Lite Green.`}
-                </span>
-              </div>
+              
 
               {/* Top Status Bar */}
               <div className="cp-profile-status-bar">
@@ -1969,8 +1947,7 @@ export default function Properties() {
                             }
                           >
                             <option value="Normal">Normal</option>
-                            <option value="High">High</option>
-                            <option value="Emergency">Emergency</option>
+                            <option value="Urgent">Urgent</option>
                           </select>
                         </div>
                         <div className="cp-form-group">

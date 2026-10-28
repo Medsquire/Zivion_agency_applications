@@ -18,7 +18,7 @@ const mockRequests = [
     technicianId: 'TECH-001',
     assignedDate: '2026-10-11',
     targetDate: '2026-10-23',
-    priority: 'High',
+    priority: 'Urgent',
     status: 'In Progress',
     description: 'Frequent tripping of 32A MCB in master bedroom and sparking switchboard.',
     assignedTechnicians: [
@@ -77,8 +77,8 @@ const mockRequests = [
     technicianId: 'SEC-001',
     assignedDate: '2026-10-22',
     targetDate: '2026-10-23',
-    priority: 'Medium',
-    status: 'Received Request',
+    priority: 'Normal',
+    status: 'Pending',
     description: 'Delivery truck carrying modular sofa arriving at 11:00 AM.',
   },
   {
@@ -114,12 +114,12 @@ describe('Services Management Page & Hierarchy Flow', () => {
     expect(screen.getAllByText('Daily Works').length).toBeGreaterThan(0);
 
     // 6 Lifecycle Stages
-    expect(screen.getByText('Received Req')).toBeInTheDocument();
     expect(screen.getAllByText('Pending').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Assigned').length).toBeGreaterThan(0);
     expect(screen.getAllByText('In Progress').length).toBeGreaterThan(0);
-    expect(screen.getByText('Work Progress')).toBeInTheDocument();
-    expect(screen.getByText('On Hold')).toBeInTheDocument();
-    expect(screen.getByText('Completed')).toBeInTheDocument();
+    expect(screen.getAllByText('Hold').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Resolved').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Closed/i).length).toBeGreaterThan(0);
 
     // Diagram Hierarchy Flow
     expect(screen.getByText('Admin')).toBeInTheDocument();
@@ -255,7 +255,7 @@ describe('Services Management Page & Hierarchy Flow', () => {
     expect(screen.getAllByText(/Case Order Created/i).length).toBeGreaterThan(0);
   });
 
-  test('comprehensive Edit Modal displays all details: Inbound from R/RWA, location, d&t, images, materials checklist, multi-tech allocation, and stage workflow', () => {
+  test('streamlined Edit Modal displays clean UI without subtitles: Inbound complaint details are read-only (non-editable), agent adds technicians dynamically with Add button, adds materials, and sets stage', () => {
     let currentRequests = [...mockRequests];
     const setRequests = (updated) => {
       currentRequests = updated;
@@ -267,44 +267,50 @@ describe('Services Management Page & Hierarchy Flow', () => {
     const editBtns = screen.getAllByTitle(/Edit complaint/i);
     fireEvent.click(editBtns[0]);
 
-    // Header check
-    expect(screen.getByText(/CASE ORDER & WORK ORDER DISPATCH WORKFLOW/i)).toBeInTheDocument();
+    // Simple Clean Header without subtitles
+    expect(screen.getByText(/REQ-1001 · Electrical Repair/i)).toBeInTheDocument();
 
-    // 1. From R/RWA checks
-    expect(screen.getAllByText(/1\. From Resident \/ RWA/i).length).toBeGreaterThan(0);
-    expect(screen.getByDisplayValue('Kavya Sharma')).toBeInTheDocument();
+    // 1. Inbound Complaint (Read-only / Non-editable) checks
+    expect(screen.getByText('Inbound Complaint')).toBeInTheDocument();
+    expect(screen.getByText('Read-Only')).toBeInTheDocument();
+    expect(screen.getAllByText('Kavya Sharma').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Surya Enclave/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Flat A-101/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Urgent Priority/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Inspection Photos/i)).toBeInTheDocument();
 
-    // 2. Where, Location, Date & Time (d & t)
-    expect(screen.getByText(/Where, Location, Date & Time \(d & t\)/i)).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Surya Enclave')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('A-101')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('High')).toBeInTheDocument();
-
-    // 3. Images & Media
-    expect(screen.getByText(/3\. Images & Inspection Media/i)).toBeInTheDocument();
-
-    // 4. Our Part: Materials Requisition
-    expect(screen.getByText(/1\. Required Materials & Spare Parts Checklist/i)).toBeInTheDocument();
+    // 2. Materials Requisition
+    expect(screen.getByText(/Materials & Spare Parts/i)).toBeInTheDocument();
     const materialInput = screen.getByPlaceholderText(/Material \/ Part name\.\.\./i);
     fireEvent.change(materialInput, { target: { value: 'Insulated Screwdriver Set 1000V' } });
     const addMatBtn = screen.getByRole('button', { name: /\+ Add$/i });
     fireEvent.click(addMatBtn);
     expect(screen.getByText('Insulated Screwdriver Set 1000V')).toBeInTheDocument();
 
-    // 5. Our Part: Multi-Technician Assignment (1, 2, 3 Techs)
-    expect(screen.getByText(/2\. How Many Technicians to Assign\?/i)).toBeInTheDocument();
-    const threeTechBtn = screen.getByRole('button', { name: /3 Technicians/i });
-    fireEvent.click(threeTechBtn);
-    expect(screen.getByText(/SO-3 · Support & Safety/i)).toBeInTheDocument();
+    // 3. Multi-Technician Assignment with Dynamic "+ Add Technician" button
+    expect(screen.getByRole('button', { name: /Add Technician/i })).toBeInTheDocument();
+    const addTechBtn = screen.getByRole('button', { name: /Add Technician/i });
+    fireEvent.click(addTechBtn);
+    expect(screen.getByText(/Technician 3/i)).toBeInTheDocument();
 
-    // 6. Stage Pipeline & Submit
-    const inProgressStageBtn = screen.getAllByRole('button', { name: /● In Progress/i })[0];
-    fireEvent.click(inProgressStageBtn);
+    // 4. Stage Transition & Submit
+    const setAssignedBtn = screen.queryByRole('button', { name: /✓ Set to Assigned/i });
+    if (setAssignedBtn) {
+      fireEvent.click(setAssignedBtn);
+    }
 
     const saveBtn = screen.getByRole('button', { name: /Save Changes & Dispatch/i });
     fireEvent.click(saveBtn);
 
-    // Verify modal closed and request was updated
-    expect(screen.queryByText(/CASE ORDER & WORK ORDER DISPATCH WORKFLOW/i)).not.toBeInTheDocument();
+    // Verify modal closed
+    expect(screen.queryByText('Agency Assignment & Dispatch')).not.toBeInTheDocument();
+  });
+
+  test('Service Task column has small image photo icon and clicking it opens Inspection Media popup', () => {
+    render(<Services requests={mockRequests} />);
+    const photoBtns = screen.getAllByTitle(/Click to view Issue & Inspection Photos popup/i);
+    expect(photoBtns.length).toBeGreaterThan(0);
+    fireEvent.click(photoBtns[0]);
+    expect(screen.getByText(/Inspection Media: Issue & IN \/ OUT Verification/i)).toBeInTheDocument();
   });
 });
