@@ -4,6 +4,7 @@ import TableScrollSlider from '../components/TableScrollSlider';
 import AudioVoicePlayer from '../components/AudioVoicePlayer';
 import { getRequestMedia } from './DashboardHome';
 import InspectionMediaModal from '../components/InspectionMediaModal';
+import { INITIAL_SOCIETIES } from '../data/propertyHierarchyData';
 import {
   SlimServices,
   SlimWrench,
@@ -35,7 +36,59 @@ import {
   SlimClock,
   SlimCalendar,
   SlimEye,
+  SlimBuilding,
+  SlimTower,
 } from '../components/SlimIcons';
+
+// ── Fallback Apartment to Towers Directory ──
+export const APARTMENT_TOWERS = {
+  'Surya Enclave': ['Tower A', 'Tower B', 'Tower C', 'All Towers'],
+  'Golden Orbit': ['Tower A', 'Tower B', 'Tower C', 'Clubhouse'],
+  'Sunrise Heights': ['Tower A', 'Tower B', 'Tower C'],
+  'SKYLINE HOMES': ['Tower A', 'Tower B', 'Pump House'],
+  'Skyline Homes': ['Tower A', 'Tower B', 'Pump House'],
+  'Silver Oak Enclave': ['Tower A', 'Tower B'],
+  'Greenwood Residency': ['Tower A', 'Tower B'],
+};
+
+// ── Helper to resolve Tower for any request ──
+export function getRequestTower(req = {}) {
+  if (req.tower && typeof req.tower === 'string' && req.tower.trim()) {
+    return req.tower.trim();
+  }
+  const flat = (req.flatNo || '').trim();
+  const title = ((req.caseTitle || '') + ' ' + (req.workOrderTitle || '')).trim();
+
+  // If title mentions Tower X
+  const titleMatch = title.match(/tower\s*([a-z0-9]+)/i);
+  if (titleMatch) {
+    return `Tower ${titleMatch[1].toUpperCase()}`;
+  }
+
+  // If flat starts with letter-number e.g. A-101, B-202, C-305
+  const letterMatch = flat.match(/^([a-z])-?\d+/i);
+  if (letterMatch) {
+    return `Tower ${letterMatch[1].toUpperCase()}`;
+  }
+
+  // If flat starts with number-number e.g. 1-402
+  const numMatch = flat.match(/^(\d+)-\d+/);
+  if (numMatch) {
+    return `Tower ${numMatch[1]}`;
+  }
+
+  if (/towers?|all/i.test(flat)) {
+    return 'All Towers';
+  }
+  if (/clubhouse/i.test(flat)) {
+    return 'Clubhouse';
+  }
+  if (/pump|sump/i.test(flat)) {
+    return 'Pump House';
+  }
+
+  return 'Tower A';
+}
 
 // ── Helper to retrieve multiple technician assignments (so1-id, so2-id, so3-id) ──
 export function getAssignedTechs(req = {}) {
@@ -223,11 +276,11 @@ export const normalizeStatus = (status) => {
 };
 
 const DEFAULT_TECHNICIANS_LIST = [
-  { id: 'TECH-001', name: 'Suresh Babu', skill: 'Electrical & AC', mobile: '+91 98765 00001' },
-  { id: 'TECH-002', name: 'Mahesh Reddy', skill: 'Plumbing & Civil', mobile: '+91 98765 00002' },
-  { id: 'TECH-003', name: 'Kiran Rao', skill: 'Civil Maintenance', mobile: '+91 98765 00003' },
-  { id: 'SEC-001', name: 'Security Desk', skill: 'Gate & Visitor Approvals', mobile: '+91 98765 00010' },
-  { id: 'DAY-001', name: 'Daily Works Crew', skill: 'Sanitation & Housekeeping', mobile: '+91 98765 00020' },
+  { id: 'TECH-001', name: 'Suresh Babu', skill: 'Electrical & AC, Elevator & Safety', skills: ['Electrical & AC', 'Elevator & Safety'], mobile: '+91 98765 00001' },
+  { id: 'TECH-002', name: 'Mahesh Reddy', skill: 'Plumbing & Civil, General Maintenance', skills: ['Plumbing & Civil', 'General Maintenance'], mobile: '+91 98765 00002' },
+  { id: 'TECH-003', name: 'Kiran Rao', skill: 'Civil Maintenance, Carpentry & Painting', skills: ['Civil Maintenance', 'Carpentry & Painting'], mobile: '+91 98765 00003' },
+  { id: 'SEC-001', name: 'Security Desk', skill: 'Gate & Visitor Approvals', skills: ['Gate & Visitor Approvals'], mobile: '+91 98765 00010' },
+  { id: 'DAY-001', name: 'Daily Works Crew', skill: 'Sanitation & Housekeeping', skills: ['Sanitation & Housekeeping'], mobile: '+91 98765 00020' },
 ];
 
 export default function Services({
@@ -246,6 +299,8 @@ export default function Services({
   // Active Category & Stage Filter
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedStage, setSelectedStage] = useState('All');
+  const [selectedApartment, setSelectedApartment] = useState('All');
+  const [selectedTower, setSelectedTower] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('table'); // 'table' | 'pipeline'
 
@@ -306,6 +361,7 @@ export default function Services({
     raisedBy: 'Residence',
     resident: '',
     apartment: 'Surya Enclave',
+    tower: 'Tower A',
     flatNo: '',
     priority: 'Normal',
     technicianId: 'TECH-001',
@@ -364,6 +420,139 @@ export default function Services({
       .toUpperCase()
       .slice(0, 2) || 'R';
 
+  // ── Dynamic list of available apartments ──
+  const availableApartments = useMemo(() => {
+    const aptMap = new Map();
+
+    if (Array.isArray(INITIAL_SOCIETIES)) {
+      INITIAL_SOCIETIES.forEach((s) => {
+        if (s && s.name) {
+          const key = s.name.trim().toLowerCase();
+          if (!aptMap.has(key)) aptMap.set(key, s.name.trim());
+        }
+      });
+    }
+
+    requests.forEach((r) => {
+      if (r && r.apartment && r.apartment.trim()) {
+        const name = r.apartment.trim();
+        const key = name.toLowerCase();
+        if (!aptMap.has(key)) aptMap.set(key, name);
+      }
+    });
+
+    return Array.from(aptMap.values()).sort((a, b) => a.localeCompare(b));
+  }, [requests]);
+
+  // ── Dynamic list of available towers for current selected apartment ──
+  const availableTowers = useMemo(() => {
+    const towerSet = new Set();
+
+    if (selectedApartment === 'All') {
+      requests.forEach((r) => {
+        const tow = getRequestTower(r);
+        if (tow) towerSet.add(tow);
+      });
+      ['Tower A', 'Tower B', 'Tower C'].forEach((t) => towerSet.add(t));
+    } else {
+      const society = Array.isArray(INITIAL_SOCIETIES)
+        ? INITIAL_SOCIETIES.find((s) => s.name && s.name.toLowerCase() === selectedApartment.toLowerCase())
+        : null;
+
+      if (society && Array.isArray(society.towers)) {
+        society.towers.slice(0, 6).forEach((t) => {
+          const cleanName = t.name && t.name.includes(' - ') ? t.name.split(' - ')[0] : (t.name || `Tower ${t.code}`);
+          towerSet.add(cleanName);
+        });
+      }
+
+      const matchedFallback = Object.keys(APARTMENT_TOWERS).find(
+        (k) => k.toLowerCase() === selectedApartment.toLowerCase()
+      );
+      if (matchedFallback && APARTMENT_TOWERS[matchedFallback]) {
+        APARTMENT_TOWERS[matchedFallback].forEach((t) => towerSet.add(t));
+      }
+
+      requests
+        .filter((r) => (r.apartment || '').trim().toLowerCase() === selectedApartment.toLowerCase())
+        .forEach((r) => {
+          const tow = getRequestTower(r);
+          if (tow) towerSet.add(tow);
+        });
+    }
+
+    return Array.from(towerSet).sort((a, b) => {
+      if (a.startsWith('Tower') && b.startsWith('Tower')) {
+        return a.localeCompare(b);
+      }
+      if (a.startsWith('Tower')) return -1;
+      if (b.startsWith('Tower')) return 1;
+      return a.localeCompare(b);
+    });
+  }, [requests, selectedApartment]);
+
+  const handleApartmentChange = (newApartment) => {
+    setSelectedApartment(newApartment);
+    setSelectedTower('All');
+  };
+
+  const hasActiveFilters =
+    selectedApartment !== 'All' ||
+    selectedTower !== 'All' ||
+    selectedStage !== 'All' ||
+    selectedCategory !== 'All' ||
+    searchQuery.trim() !== '';
+
+  const handleResetFilters = () => {
+    setSelectedApartment('All');
+    setSelectedTower('All');
+    setSelectedStage('All');
+    setSelectedCategory('All');
+    setSearchQuery('');
+  };
+
+  const checkApartmentMatch = (r, apt) => {
+    if (apt === 'All') return true;
+    return (r.apartment || '').trim().toLowerCase() === apt.trim().toLowerCase();
+  };
+
+  const checkTowerMatch = (r, tow) => {
+    if (tow === 'All') return true;
+    const reqTow = getRequestTower(r);
+    const target = tow.trim().toLowerCase();
+    if (reqTow && reqTow.trim().toLowerCase() === target) return true;
+    if (r.tower && r.tower.trim().toLowerCase() === target) return true;
+    if (tow.startsWith('Tower ') && r.flatNo) {
+      const code = tow.replace('Tower ', '').trim().toUpperCase();
+      if (r.flatNo.toUpperCase().startsWith(`${code}-`)) return true;
+    }
+    return false;
+  };
+
+  // ── Total count matching current category, apartment & tower (before stage filter) ──
+  const totalInApartmentTower = useMemo(() => {
+    return requests.filter((r) => {
+      let matchesCategory = true;
+      if (selectedCategory === 'All') {
+        matchesCategory = true;
+      } else if (selectedCategory === 'Technicians') {
+        matchesCategory = (r.category || 'Technicians') === 'Technicians';
+      } else if (selectedCategory === 'Security') {
+        matchesCategory = (r.category || '') === 'Security';
+      } else if (selectedCategory === 'Daily Works') {
+        matchesCategory = (r.category || '') === 'Daily Works';
+      } else {
+        matchesCategory = getServiceClassification(r) === selectedCategory;
+      }
+
+      return (
+        matchesCategory &&
+        checkApartmentMatch(r, selectedApartment) &&
+        checkTowerMatch(r, selectedTower)
+      );
+    }).length;
+  }, [requests, selectedCategory, selectedApartment, selectedTower]);
+
   // ── Counts per Stage ─────────────────────────────────────────────────────
   const stageCounts = useMemo(() => {
     const counts = {};
@@ -381,11 +570,20 @@ export default function Services({
         } else {
           matchesCategory = getServiceClassification(r) === selectedCategory;
         }
-        return matchesCategory && (r.status === s.id || normalizeStatus(r.status) === s.id);
+
+        const matchesApartment = checkApartmentMatch(r, selectedApartment);
+        const matchesTower = checkTowerMatch(r, selectedTower);
+
+        return (
+          matchesCategory &&
+          matchesApartment &&
+          matchesTower &&
+          (r.status === s.id || normalizeStatus(r.status) === s.id)
+        );
       }).length;
     });
     return counts;
-  }, [requests, selectedCategory]);
+  }, [requests, selectedCategory, selectedApartment, selectedTower]);
 
   // ── Filtered Requests ────────────────────────────────────────────────────
   const filteredRequests = useMemo(() => {
@@ -407,6 +605,10 @@ export default function Services({
       const matchesStage =
         selectedStage === 'All' || r.status === selectedStage || rStatus === selectedStage;
 
+      const matchesApartment = checkApartmentMatch(r, selectedApartment);
+      const matchesTower = checkTowerMatch(r, selectedTower);
+
+      const rTower = getRequestTower(r);
       const q = searchQuery.toLowerCase().trim();
       const matchesSearch =
         !q ||
@@ -418,11 +620,13 @@ export default function Services({
         (r.resident && r.resident.toLowerCase().includes(q)) ||
         (r.flatNo && r.flatNo.toLowerCase().includes(q)) ||
         (r.apartment && r.apartment.toLowerCase().includes(q)) ||
+        (r.tower && r.tower.toLowerCase().includes(q)) ||
+        (rTower && rTower.toLowerCase().includes(q)) ||
         (r.technician && r.technician.toLowerCase().includes(q));
 
-      return matchesCategory && matchesStage && matchesSearch;
+      return matchesCategory && matchesStage && matchesApartment && matchesTower && matchesSearch;
     });
-  }, [requests, selectedCategory, selectedStage, searchQuery]);
+  }, [requests, selectedCategory, selectedStage, selectedApartment, selectedTower, searchQuery]);
 
   // ── CRUD: Create New Complaint / Case Order ───────────────────────────────
   const handleRaiseSubmit = (e) => {
@@ -482,6 +686,7 @@ export default function Services({
         newComplaintForm.resident ||
         (newComplaintForm.raisedBy === 'RWA' ? 'RWA Management' : 'Resident'),
       apartment: newComplaintForm.apartment || 'Surya Enclave',
+      tower: newComplaintForm.tower || 'Tower A',
       flatNo:
         newComplaintForm.flatNo ||
         (newComplaintForm.category === 'Daily Works' ? 'All Towers' : 'A-101'),
@@ -549,6 +754,7 @@ export default function Services({
       raisedBy: 'Residence',
       resident: '',
       apartment: 'Surya Enclave',
+      tower: 'Tower A',
       flatNo: '',
       priority: 'Normal',
       technicianId: 'TECH-001',
@@ -1192,7 +1398,7 @@ export default function Services({
                 <div
                   className="svc-stage-bar"
                   style={{
-                    width: requests.length ? `${Math.min(100, Math.round((count / requests.length) * 100))}%` : '0%',
+                    width: totalInApartmentTower ? `${Math.min(100, Math.round((count / totalInApartmentTower) * 100))}%` : '0%',
                     backgroundColor: stg.dotColor,
                   }}
                 />
@@ -1202,9 +1408,10 @@ export default function Services({
         })}
       </div>
 
-      {/* ── Search, Stage Select, and View Switcher Toolbar ─────────────── */}
+      {/* ── Search, Apartment, Tower, Stage Select, and View Switcher Toolbar ── */}
       <div className="svc-toolbar">
         <div className="svc-toolbar-left">
+          {/* 1. Search Box */}
           <div className="svc-search-wrap">
             <span className="svc-search-icon">
               <SlimSearch size={14} strokeWidth={1.5} />
@@ -1215,6 +1422,7 @@ export default function Services({
               placeholder="Search ID, title, flat, resident, technician..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Search cases"
             />
             {searchQuery && (
               <button
@@ -1222,12 +1430,68 @@ export default function Services({
                 className="svc-search-clear"
                 onClick={() => setSearchQuery('')}
                 title="Clear search"
+                aria-label="Clear search"
               >
                 <SlimX size={13} strokeWidth={1.5} />
               </button>
             )}
           </div>
 
+          {/* 2. Apartment / Society Filter */}
+          <div className="svc-select-wrap">
+            <span className="svc-select-icon">
+              <SlimBuilding size={13} strokeWidth={1.5} />
+            </span>
+            <select
+              className="svc-filter-select"
+              value={selectedApartment}
+              onChange={(e) => handleApartmentChange(e.target.value)}
+              aria-label="Filter by Apartment"
+              title="Filter by Apartment / Society"
+            >
+              <option value="All">All Apartments ({requests.length})</option>
+              {availableApartments.map((apt) => {
+                const count = requests.filter(
+                  (r) => (r.apartment || '').trim().toLowerCase() === apt.trim().toLowerCase()
+                ).length;
+                return (
+                  <option key={apt} value={apt}>
+                    {apt} ({count})
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          {/* 3. Tower Filter */}
+          <div className="svc-select-wrap">
+            <span className="svc-select-icon">
+              <SlimTower size={13} strokeWidth={1.5} />
+            </span>
+            <select
+              className="svc-filter-select"
+              value={selectedTower}
+              onChange={(e) => setSelectedTower(e.target.value)}
+              aria-label="Filter by Tower"
+              title="Filter by Tower"
+            >
+              <option value="All">All Towers</option>
+              {availableTowers.map((tow) => {
+                const count = requests.filter((r) => {
+                  const aptMatch = checkApartmentMatch(r, selectedApartment);
+                  const towMatch = checkTowerMatch(r, tow);
+                  return aptMatch && towMatch;
+                }).length;
+                return (
+                  <option key={tow} value={tow}>
+                    {tow} ({count})
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          {/* 4. Stage Filter */}
           <div className="svc-select-wrap">
             <span className="svc-select-icon">
               <SlimSliders size={13} strokeWidth={1.5} />
@@ -1236,8 +1500,10 @@ export default function Services({
               className="svc-filter-select"
               value={selectedStage}
               onChange={(e) => setSelectedStage(e.target.value)}
+              aria-label="Filter by Stage"
+              title="Filter by Stage"
             >
-              <option value="All">All Stages ({requests.length})</option>
+              <option value="All">All Stages ({totalInApartmentTower})</option>
               {STAGES.map((stg) => (
                 <option key={stg.id} value={stg.id}>
                   {stg.label} ({stageCounts[stg.id] || 0})
@@ -1245,6 +1511,20 @@ export default function Services({
               ))}
             </select>
           </div>
+
+          {/* Reset Filters button if any filter is active */}
+          {hasActiveFilters && (
+            <button
+              type="button"
+              className="svc-filter-reset-btn"
+              onClick={handleResetFilters}
+              title="Reset all active filters"
+              aria-label="Reset all filters"
+            >
+              <SlimRotateCcw size={12} strokeWidth={1.5} />
+              <span>Reset</span>
+            </button>
+          )}
 
           <span className="svc-count-indicator">
             {filteredRequests.length} of {requests.length} cases
@@ -1394,7 +1674,7 @@ export default function Services({
                             <div className="svc-location-text">
                               <SlimMapPin size={11} strokeWidth={1.5} />
                               <span>
-                                {req.flatNo} · {req.apartment}
+                                {req.flatNo} <span className="svc-tower-pill">{req.tower || getRequestTower(req)}</span> · {req.apartment}
                               </span>
                             </div>
                           </div>
@@ -1579,7 +1859,7 @@ export default function Services({
                       <div className="svc-card-resident">
                         <SlimMapPin size={12} strokeWidth={1.5} />
                         <span>
-                          {req.resident || 'Resident'} · {req.flatNo} ({req.apartment})
+                          {req.resident || 'Resident'} · <span className="svc-tower-pill">{req.tower || getRequestTower(req)}</span> · {req.flatNo} ({req.apartment})
                         </span>
                       </div>
 
@@ -1784,7 +2064,7 @@ export default function Services({
                         {selectedRequest.resident || 'Resident'}
                       </div>
                       <div className="svc-field-sub">
-                        {selectedRequest.apartment} · Flat {selectedRequest.flatNo}
+                        {selectedRequest.apartment} · <span className="svc-tower-pill">{selectedRequest.tower || getRequestTower(selectedRequest)}</span> · Flat {selectedRequest.flatNo}
                       </div>
                     </div>
                     <div className="svc-form-group">
@@ -2402,12 +2682,15 @@ export default function Services({
                     <select
                       className="svc-form-select"
                       value={newComplaintForm.apartment}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const apt = e.target.value;
+                        const defaultTowers = APARTMENT_TOWERS[apt] || ['Tower A', 'Tower B', 'Tower C'];
                         setNewComplaintForm({
                           ...newComplaintForm,
-                          apartment: e.target.value,
-                        })
-                      }
+                          apartment: apt,
+                          tower: defaultTowers[0] || 'Tower A',
+                        });
+                      }}
                     >
                       <option value="Surya Enclave">Surya Enclave</option>
                       <option value="Golden Orbit">Golden Orbit</option>
@@ -2418,20 +2701,40 @@ export default function Services({
                   </div>
 
                   <div className="svc-form-group">
-                    <label>Flat / Unit No.</label>
-                    <input
-                      type="text"
-                      className="svc-form-input"
-                      placeholder="e.g. A-101"
-                      value={newComplaintForm.flatNo}
+                    <label>Tower / Block</label>
+                    <select
+                      className="svc-form-select"
+                      value={newComplaintForm.tower || 'Tower A'}
                       onChange={(e) =>
                         setNewComplaintForm({
                           ...newComplaintForm,
-                          flatNo: e.target.value,
+                          tower: e.target.value,
                         })
                       }
-                    />
+                    >
+                      {(APARTMENT_TOWERS[newComplaintForm.apartment] || ['Tower A', 'Tower B', 'Tower C']).map((tow) => (
+                        <option key={tow} value={tow}>
+                          {tow}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+                </div>
+
+                <div className="svc-form-group">
+                  <label>Flat / Unit No.</label>
+                  <input
+                    type="text"
+                    className="svc-form-input"
+                    placeholder="e.g. A-101"
+                    value={newComplaintForm.flatNo}
+                    onChange={(e) =>
+                      setNewComplaintForm({
+                        ...newComplaintForm,
+                        flatNo: e.target.value,
+                      })
+                    }
+                  />
                 </div>
 
                 <div className="svc-form-row-2">

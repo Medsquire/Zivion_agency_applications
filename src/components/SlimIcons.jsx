@@ -387,4 +387,27 @@ export function SlimPackage({ size = 16, strokeWidth = 1.5, className = '', ...p
   );
 }
 
+export function SlimBuilding({ size = 16, strokeWidth = 1.5, className = '', ...props }) {
+  return (
+    <svg {...baseProps(size, strokeWidth, className)} {...props}>
+      <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+      <path d="M9 22v-4h6v4" />
+      <path d="M8 6h.01M16 6h.01M8 10h.01M16 10h.01M8 14h.01M16 14h.01" />
+    </svg>
+  );
+}
+
+export function SlimTower({ size = 16, strokeWidth = 1.5, className = '', ...props }) {
+  return (
+    <svg {...baseProps(size, strokeWidth, className)} {...props}>
+      <path d="M6 22V7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v15" />
+      <path d="M12 2v3" />
+      <path d="M9 9h6" />
+      <path d="M9 13h6" />
+      <path d="M9 17h6" />
+    </svg>
+  );
+}
+
+
 

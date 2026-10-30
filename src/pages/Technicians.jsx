@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import './Technicians.css';
 import TableScrollSlider from '../components/TableScrollSlider';
 import { TechniciansIcon, ServicesIcon } from '../components/AppIcons';
@@ -13,7 +13,7 @@ import {
   SlimMapPin,
 } from '../components/SlimIcons';
 
-const SKILL_OPTIONS = [
+export const SKILL_OPTIONS = [
   'Electrical & AC',
   'Plumbing & Civil',
   'Civil Maintenance',
@@ -23,6 +23,212 @@ const SKILL_OPTIONS = [
   'Carpentry & Painting',
   'General Maintenance',
 ];
+
+// ── Helper to retrieve all skills for a technician ──────────────────────────
+export const getTechnicianSkills = (tech) => {
+  if (!tech) return ['General Maintenance'];
+  if (Array.isArray(tech.skills) && tech.skills.length > 0) {
+    return tech.skills.filter(Boolean);
+  }
+  if (typeof tech.skill === 'string' && tech.skill.trim()) {
+    return tech.skill
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return ['General Maintenance'];
+};
+
+// ── Multi-Skill Selector Component ──────────────────────────────────────────
+export function MultiSkillSelector({
+  selectedSkills = [],
+  onChange,
+  availableOptions = SKILL_OPTIONS,
+  label = 'Specialization / Skill *',
+  id = 'skill-selector',
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [customInput, setCustomInput] = useState('');
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [isOpen]);
+
+  const toggleSkill = (skill) => {
+    if (selectedSkills.includes(skill)) {
+      onChange(selectedSkills.filter((s) => s !== skill));
+    } else {
+      onChange([...selectedSkills, skill]);
+    }
+  };
+
+  const removeSkill = (e, skill) => {
+    e.stopPropagation();
+    onChange(selectedSkills.filter((s) => s !== skill));
+  };
+
+  const handleAddCustom = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const trimmed = customInput.trim();
+    if (trimmed && !selectedSkills.includes(trimmed)) {
+      onChange([...selectedSkills, trimmed]);
+      setCustomInput('');
+    }
+  };
+
+  return (
+    <div className="tech-form-group tech-multi-skill-container" ref={containerRef}>
+      <div className="tech-multi-skill-label">
+        <label htmlFor={id}>{label}</label>
+        <span className="tech-multi-skill-counter">
+          {selectedSkills.length > 0 ? `${selectedSkills.length} selected` : 'Select skills'}
+        </span>
+      </div>
+
+      {/* Main trigger / dropdown input box */}
+      <div
+        id={id}
+        tabIndex={0}
+        role="button"
+        aria-label="Select specializations"
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        className={`tech-multi-skill-trigger ${isOpen ? 'is-open' : ''}`}
+        onClick={() => setIsOpen((prev) => !prev)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsOpen((prev) => !prev);
+          } else if (e.key === 'Escape') {
+            setIsOpen(false);
+          }
+        }}
+      >
+        <div className="tech-multi-skill-pills-wrap">
+          {selectedSkills.length === 0 ? (
+            <span className="tech-multi-skill-placeholder">
+              Select one or more specializations...
+            </span>
+          ) : (
+            selectedSkills.map((sk) => (
+              <span key={sk} className="tech-skill-selected-badge">
+                <span>{sk}</span>
+                <button
+                  type="button"
+                  className="tech-skill-remove-btn"
+                  onClick={(e) => removeSkill(e, sk)}
+                  title={`Remove ${sk}`}
+                  aria-label={`Remove ${sk}`}
+                >
+                  <SlimX size={11} strokeWidth={2} />
+                </button>
+              </span>
+            ))
+          )}
+        </div>
+
+        <span className={`tech-multi-skill-chevron ${isOpen ? 'is-rotated' : ''}`}>
+          ▾
+        </span>
+      </div>
+
+      {/* Dropdown Menu Popover */}
+      {isOpen && (
+        <div className="tech-multi-skill-dropdown" role="listbox">
+          <div className="tech-multi-skill-dropdown-header">
+            <span>Choose all applicable skills</span>
+            {selectedSkills.length > 0 && (
+              <button
+                type="button"
+                className="tech-multi-skill-clear-all"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChange([]);
+                }}
+              >
+                Clear All
+              </button>
+            )}
+          </div>
+
+          <div className="tech-multi-skill-list">
+            {availableOptions.map((sk) => {
+              const isChecked = selectedSkills.includes(sk);
+              return (
+                <div
+                  key={sk}
+                  role="option"
+                  aria-selected={isChecked}
+                  className={`tech-skill-option-item ${isChecked ? 'is-selected' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleSkill(sk);
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    className="tech-skill-checkbox"
+                    checked={isChecked}
+                    onChange={() => {}}
+                    tabIndex={-1}
+                  />
+                  <span className="tech-skill-option-name">{sk}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Quick Custom Skill entry & Done action */}
+          <div
+            className="tech-skill-custom-add"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <input
+              type="text"
+              placeholder="+ Add custom skill..."
+              className="tech-skill-custom-input"
+              value={customInput}
+              onChange={(e) => setCustomInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleAddCustom(e);
+                }
+              }}
+            />
+            <button
+              type="button"
+              className="tech-skill-custom-btn"
+              onClick={handleAddCustom}
+              disabled={!customInput.trim()}
+            >
+              Add
+            </button>
+            <button
+              type="button"
+              className="tech-skill-done-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+              }}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const APARTMENT_OPTIONS = [
   'All Communities',
@@ -64,6 +270,7 @@ function Technicians({ technicians = [], setTechnicians, requests = [] }) {
   // ── Forms State ───────────────────────────────────────────────────────────
   const [addForm, setAddForm] = useState({
     name: '',
+    skills: ['Electrical & AC'],
     skill: 'Electrical & AC',
     mobile: '',
     email: '',
@@ -74,6 +281,7 @@ function Technicians({ technicians = [], setTechnicians, requests = [] }) {
 
   const [editForm, setEditForm] = useState({
     name: '',
+    skills: [],
     skill: '',
     mobile: '',
     email: '',
@@ -160,11 +368,13 @@ function Technicians({ technicians = [], setTechnicians, requests = [] }) {
     return activeTechniciansList.filter((t) => {
       const q = searchQuery.toLowerCase().trim();
       const sos = getAssignedSOs(t.id, t.name);
+      const skills = getTechnicianSkills(t);
       const matchesSearch =
         !q ||
         t.name.toLowerCase().includes(q) ||
         t.id.toLowerCase().includes(q) ||
         (t.skill && t.skill.toLowerCase().includes(q)) ||
+        skills.some((s) => s.toLowerCase().includes(q)) ||
         (t.mobile && t.mobile.includes(q)) ||
         sos.some(
           (s) =>
@@ -178,6 +388,7 @@ function Technicians({ technicians = [], setTechnicians, requests = [] }) {
 
       const matchesSkill =
         selectedSkillFilter === 'All' ||
+        skills.some((s) => s.toLowerCase().includes(selectedSkillFilter.toLowerCase())) ||
         (t.skill && t.skill.toLowerCase().includes(selectedSkillFilter.toLowerCase()));
 
       return matchesSearch && matchesStatus && matchesSkill;
@@ -192,11 +403,20 @@ function Technicians({ technicians = [], setTechnicians, requests = [] }) {
       return;
     }
 
+    const selectedSkills =
+      Array.isArray(addForm.skills) && addForm.skills.length > 0
+        ? addForm.skills
+        : addForm.skill
+        ? addForm.skill.split(',').map((s) => s.trim()).filter(Boolean)
+        : ['Electrical & AC'];
+
+    const primarySkill = selectedSkills[0] || 'General Maintenance';
+
     // Auto-generate next technician ID
     const nextNum = activeTechniciansList.length + 1;
-    const prefix = addForm.skill.includes('Security')
+    const prefix = primarySkill.includes('Security')
       ? 'SEC'
-      : addForm.skill.includes('Housekeeping')
+      : primarySkill.includes('Housekeeping') || primarySkill.includes('Sanitation')
       ? 'DAY'
       : 'TECH';
     const newId = `${prefix}-${String(nextNum).padStart(3, '0')}`;
@@ -204,7 +424,8 @@ function Technicians({ technicians = [], setTechnicians, requests = [] }) {
     const newTechnician = {
       id: newId,
       name: addForm.name.trim(),
-      skill: addForm.skill,
+      skills: selectedSkills,
+      skill: selectedSkills.join(', '),
       mobile: addForm.mobile.trim(),
       email: addForm.email.trim() || `${addForm.name.toLowerCase().replace(/\s+/g, '.')}@agency.bee.com`,
       status: addForm.status,
@@ -216,6 +437,7 @@ function Technicians({ technicians = [], setTechnicians, requests = [] }) {
     setIsAddModalOpen(false);
     setAddForm({
       name: '',
+      skills: ['Electrical & AC'],
       skill: 'Electrical & AC',
       mobile: '',
       email: '',
@@ -229,9 +451,11 @@ function Technicians({ technicians = [], setTechnicians, requests = [] }) {
   // ── CRUD 2: UPDATE (Edit Existing Technician) ─────────────────────────────
   const openEditModal = (technician) => {
     setEditingTechnician(technician);
+    const skills = getTechnicianSkills(technician);
     setEditForm({
       name: technician.name,
-      skill: technician.skill || 'General Maintenance',
+      skills,
+      skill: skills.join(', '),
       mobile: technician.mobile || '',
       email: technician.email || '',
       status: technician.status || 'Available',
@@ -244,12 +468,20 @@ function Technicians({ technicians = [], setTechnicians, requests = [] }) {
     e.preventDefault();
     if (!editingTechnician) return;
 
+    const selectedSkills =
+      Array.isArray(editForm.skills) && editForm.skills.length > 0
+        ? editForm.skills
+        : editForm.skill
+        ? editForm.skill.split(',').map((s) => s.trim()).filter(Boolean)
+        : ['General Maintenance'];
+
     const updated = activeTechniciansList.map((t) => {
       if (t.id === editingTechnician.id) {
         return {
           ...t,
           name: editForm.name.trim() || t.name,
-          skill: editForm.skill,
+          skills: selectedSkills,
+          skill: selectedSkills.join(', '),
           mobile: editForm.mobile.trim() || t.mobile,
           email: editForm.email.trim() || t.email,
           status: editForm.status,
@@ -440,7 +672,13 @@ function Technicians({ technicians = [], setTechnicians, requests = [] }) {
                         </div>
                       </td>
                       <td>
-                        <span className="spec-badge">{technician.skill}</span>
+                        <div className="tech-spec-badges-wrap">
+                          {getTechnicianSkills(technician).map((sk) => (
+                            <span key={sk} className="spec-badge">
+                              {sk}
+                            </span>
+                          ))}
+                        </div>
                       </td>
                       <td>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
@@ -578,20 +816,18 @@ function Technicians({ technicians = [], setTechnicians, requests = [] }) {
                 </div>
 
                 <div className="tech-form-row-2">
-                  <div className="tech-form-group">
-                    <label>Specialization / Skill *</label>
-                    <select
-                      className="tech-form-select"
-                      value={addForm.skill}
-                      onChange={(e) => setAddForm({ ...addForm, skill: e.target.value })}
-                    >
-                      {SKILL_OPTIONS.map((sk) => (
-                        <option key={sk} value={sk}>
-                          {sk}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <MultiSkillSelector
+                    id="add-tech-skills"
+                    label="Specialization / Skill *"
+                    selectedSkills={addForm.skills || (addForm.skill ? [addForm.skill] : ['Electrical & AC'])}
+                    onChange={(newSkills) =>
+                      setAddForm({
+                        ...addForm,
+                        skills: newSkills,
+                        skill: newSkills.join(', '),
+                      })
+                    }
+                  />
 
                   <div className="tech-form-group">
                     <label>Initial Status</label>
@@ -713,20 +949,24 @@ function Technicians({ technicians = [], setTechnicians, requests = [] }) {
                 </div>
 
                 <div className="tech-form-row-2">
-                  <div className="tech-form-group">
-                    <label>Specialization / Skill *</label>
-                    <select
-                      className="tech-form-select"
-                      value={editForm.skill}
-                      onChange={(e) => setEditForm({ ...editForm, skill: e.target.value })}
-                    >
-                      {SKILL_OPTIONS.map((sk) => (
-                        <option key={sk} value={sk}>
-                          {sk}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <MultiSkillSelector
+                    id="edit-tech-skills"
+                    label="Specialization / Skill *"
+                    selectedSkills={
+                      editForm.skills && editForm.skills.length > 0
+                        ? editForm.skills
+                        : editForm.skill
+                        ? editForm.skill.split(',').map((s) => s.trim()).filter(Boolean)
+                        : ['General Maintenance']
+                    }
+                    onChange={(newSkills) =>
+                      setEditForm({
+                        ...editForm,
+                        skills: newSkills,
+                        skill: newSkills.join(', '),
+                      })
+                    }
+                  />
 
                   <div className="tech-form-group">
                     <label>Work Status</label>
@@ -836,9 +1076,13 @@ function Technicians({ technicians = [], setTechnicians, requests = [] }) {
                 </div>
                 <div className="tech-hero-info">
                   <h3>{viewingTechnician.name}</h3>
-                  <div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
                     <span className="tech-hero-id-tag">{viewingTechnician.id}</span>
-                    <span className="spec-badge">{viewingTechnician.skill}</span>
+                    {getTechnicianSkills(viewingTechnician).map((sk) => (
+                      <span key={sk} className="spec-badge">
+                        {sk}
+                      </span>
+                    ))}
                   </div>
                   <div className="tech-hero-skill" style={{ marginTop: '6px' }}>
                     Status:{' '}

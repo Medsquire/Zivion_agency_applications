@@ -586,3 +586,308 @@
   background: #2563EB;
   color: #FFFFFF;
 }
+
+/* ── Multi-Skill Selector Component ── */
+.tech-multi-skill-container {
+  position: relative;
+}
+
+.tech-multi-skill-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 6px;
+}
+
+.tech-multi-skill-counter {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #2563EB;
+  text-transform: none;
+}
+
+.tech-multi-skill-trigger {
+  min-height: 42px;
+  padding: 5px 10px;
+  background: #F8FAFC;
+  border: 1px solid #CBD5E1;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  user-select: none;
+}
+
+.tech-multi-skill-trigger:hover {
+  border-color: #94A3B8;
+  background: #FFFFFF;
+}
+
+.tech-multi-skill-trigger.is-open {
+  border-color: #2563EB;
+  background: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.tech-multi-skill-pills-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  flex: 1;
+}
+
+.tech-multi-skill-placeholder {
+  font-size: 0.8rem;
+  color: #94A3B8;
+}
+
+.tech-skill-selected-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: #EFF6FF;
+  color: #1D4ED8;
+  border: 1px solid #BFDBFE;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.tech-skill-remove-btn {
+  background: none;
+  border: none;
+  color: #2563EB;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  transition: all 0.12s ease;
+}
+
+.tech-skill-remove-btn:hover {
+  color: #DC2626;
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.tech-multi-skill-chevron {
+  font-size: 0.8rem;
+  color: #64748B;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.tech-multi-skill-chevron.is-rotated {
+  transform: rotate(180deg);
+}
+
+.tech-multi-skill-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 8px;
+  box-shadow: 0 10px 20px -3px rgba(0, 0, 0, 0.12), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 60;
+  padding: 6px;
+  animation: techModalFadeIn 0.15s ease;
+}
+
+.tech-multi-skill-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748B;
+  border-bottom: 1px solid #F1F5F9;
+  margin-bottom: 4px;
+}
+
+.tech-multi-skill-clear-all {
+  background: none;
+  border: none;
+  color: #DC2626;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.tech-multi-skill-clear-all:hover {
+  background: #FEE2E2;
+}
+
+.tech-multi-skill-list {
+  max-height: 190px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tech-skill-option-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: #334155;
+  font-weight: 500;
+  transition: all 0.12s ease;
+}
+
+.tech-skill-option-item:hover {
+  background: #F1F5F9;
+}
+
+.tech-skill-option-item.is-selected {
+  background: #EFF6FF;
+  color: #1D4ED8;
+  font-weight: 600;
+}
+
+.tech-skill-checkbox {
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+  accent-color: #2563EB;
+  cursor: pointer;
+}
+
+.tech-skill-custom-add {
+  display: flex;
+  gap: 6px;
+  padding: 8px 6px 4px;
+  border-top: 1px solid #F1F5F9;
+  margin-top: 4px;
+}
+
+.tech-skill-custom-input {
+  flex: 1;
+  padding: 5px 8px;
+  font-size: 0.78rem;
+  border: 1px solid #CBD5E1;
+  border-radius: 5px;
+  outline: none;
+}
+
+.tech-skill-custom-input:focus {
+  border-color: #2563EB;
+}
+
+.tech-skill-custom-btn {
+  padding: 5px 10px;
+  background: #2563EB;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tech-skill-custom-btn:disabled {
+  background: #CBD5E1;
+  cursor: not-allowed;
+}
+
+.tech-skill-done-btn {
+  padding: 5px 12px;
+  background: #F1F5F9;
+  color: #334155;
+  border: 1px solid #CBD5E1;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.tech-skill-done-btn:hover {
+  background: #E2E8F0;
+  color: #0F172A;
+}
+
+.tech-quick-skill-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.tech-quick-chip {
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.71rem;
+  font-weight: 550;
+  cursor: pointer;
+  border: 1px solid #E2E8F0;
+  background: #F8FAFC;
+  color: #475569;
+  transition: all 0.14s ease;
+}
+
+.tech-quick-chip:hover {
+  background: #F1F5F9;
+  border-color: #CBD5E1;
+  color: #0F172A;
+}
+
+.tech-quick-chip.is-active {
+  background: #2563EB;
+  color: #FFFFFF;
+  border-color: #2563EB;
+}
+
+.tech-spec-badges-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+/* Dark theme overrides for MultiSkillSelector */
+[data-theme="dark"] .tech-multi-skill-trigger {
+  background: #1E293B;
+  border-color: #334155;
+  color: #F8FAFC;
+}
+
+[data-theme="dark"] .tech-multi-skill-dropdown {
+  background: #0F172A;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .tech-skill-option-item {
+  color: #CBD5E1;
+}
+
+[data-theme="dark"] .tech-skill-option-item:hover {
+  background: #1E293B;
+}
+
+[data-theme="dark"] .tech-quick-chip {
+  background: #1E293B;
+  border-color: #334155;
+  color: #94A3B8;
+}

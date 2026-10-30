@@ -339,22 +339,42 @@ function DashboardHome({
           </label>
         </div>
 
-        <div className="apartment-metrics apartment-metrics-lite">
-          <article className="apartment-metric apartment-metric-technicians" title="Active Technicians available or assigned">
+        <div className="apartment-metrics apartment-metrics-lite" role="region" aria-label="Apartment Overview Metrics">
+          <button
+            type="button"
+            className="apartment-metric apartment-metric-technicians"
+            title="Active Technicians available or assigned - Click to view Technicians"
+            aria-label={`Apartment Active Techs: ${apartmentActiveTechnicianCount}`}
+            onClick={() => onNavigate && onNavigate('Technicians')}
+          >
             <div className="apartment-metric-icon"><TechniciansIcon size={20} /></div>
             <div className="apartment-metric-info">
               <strong className="apartment-metric-value">{apartmentActiveTechnicianCount}</strong>
               <span className="apartment-metric-label">Active Techs</span>
             </div>
-          </article>
-          <article className="apartment-metric apartment-metric-inactive" title="Inactive Technicians">
+          </button>
+          <button
+            type="button"
+            className="apartment-metric apartment-metric-inactive"
+            title="Inactive Technicians - Click to view Technicians"
+            aria-label={`Apartment Inactive Techs: ${technicians.filter((t) => ['On Leave', 'Inactive'].includes(t.status)).length}`}
+            onClick={() => onNavigate && onNavigate('Technicians')}
+          >
             <div className="apartment-metric-icon"><TechniciansIcon size={20} /></div>
             <div className="apartment-metric-info">
-              <strong className="apartment-metric-value">0</strong>
+              <strong className="apartment-metric-value">
+                {technicians.filter((t) => ['On Leave', 'Inactive'].includes(t.status)).length}
+              </strong>
               <span className="apartment-metric-label">Inactive</span>
             </div>
-          </article>
-          <article className="apartment-metric apartment-metric-requests" title="Pending Service Requests">
+          </button>
+          <button
+            type="button"
+            className="apartment-metric apartment-metric-requests"
+            title="Pending Service Requests - Click to view Services"
+            aria-label={`Apartment Pending Requests: ${apartmentRequests.filter((request) => request.status === 'Pending').length}`}
+            onClick={() => onNavigate && onNavigate('Services')}
+          >
             <div className="apartment-metric-icon"><ServicesIcon size={20} /></div>
             <div className="apartment-metric-info">
               <strong className="apartment-metric-value">
@@ -362,8 +382,14 @@ function DashboardHome({
               </strong>
               <span className="apartment-metric-label">Pending</span>
             </div>
-          </article>
-          <article className="apartment-metric apartment-metric-progress" title="In Progress Requests">
+          </button>
+          <button
+            type="button"
+            className="apartment-metric apartment-metric-progress"
+            title="In Progress Requests - Click to view Services"
+            aria-label={`Apartment In Progress Requests: ${apartmentRequests.filter((request) => ['In Progress', 'Assigned'].includes(request.status)).length}`}
+            onClick={() => onNavigate && onNavigate('Services')}
+          >
             <div className="apartment-metric-icon"><ServicesIcon size={20} /></div>
             <div className="apartment-metric-info">
               <strong className="apartment-metric-value">
@@ -371,15 +397,27 @@ function DashboardHome({
               </strong>
               <span className="apartment-metric-label">In Progress</span>
             </div>
-          </article>
-          <article className="apartment-metric apartment-metric-departments" title="Departments per property">
+          </button>
+          <button
+            type="button"
+            className="apartment-metric apartment-metric-departments"
+            title="Departments per property - Click to view Communities"
+            aria-label="Apartment Departments: 7"
+            onClick={() => onNavigate && onNavigate('Communities')}
+          >
             <div className="apartment-metric-icon"><CommunitiesIcon size={20} /></div>
             <div className="apartment-metric-info">
               <strong className="apartment-metric-value">7</strong>
               <span className="apartment-metric-label">Depts</span>
             </div>
-          </article>
-          <article className="apartment-metric apartment-metric-agencies" title={selectedApartment === 'All Apartments' ? 'Agencies across all properties' : selectedApartment}>
+          </button>
+          <button
+            type="button"
+            className="apartment-metric apartment-metric-agencies"
+            title={selectedApartment === 'All Apartments' ? 'Agencies across all properties - Click to view Communities' : `${selectedApartment} - Click to view Communities`}
+            aria-label={`Apartment Agencies: ${apartmentAgencyNames.length || 0}`}
+            onClick={() => onNavigate && onNavigate('Communities')}
+          >
             <div className="apartment-metric-icon"><TeamAccessIcon size={20} /></div>
             <div className="apartment-metric-info">
               <strong className="apartment-metric-value">
@@ -387,7 +425,7 @@ function DashboardHome({
               </strong>
               <span className="apartment-metric-label">Agencies</span>
             </div>
-          </article>
+          </button>
         </div>
       </section>
 

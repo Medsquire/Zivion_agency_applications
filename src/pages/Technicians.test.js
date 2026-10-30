@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import Technicians from './Technicians';
 
 const mockTechnicians = [
@@ -191,5 +191,55 @@ describe('Technicians CRUD Operations & Management', () => {
 
     expect(screen.getByText('Suresh Babu')).toBeInTheDocument();
     expect(screen.queryByText('Mahesh Reddy')).not.toBeInTheDocument();
+  });
+
+  test('supports selecting multiple skills when onboarding and updating a technician', () => {
+    let currentList = [...mockTechnicians];
+    const setTechnicians = (newList) => {
+      currentList = newList;
+    };
+
+    const { rerender } = render(
+      <Technicians technicians={currentList} setTechnicians={setTechnicians} />
+    );
+
+    // 1. Open Add Modal
+    const addBtn = screen.getByRole('button', { name: /\+ Add Technician/i });
+    fireEvent.click(addBtn);
+
+    // Fill basic fields
+    const nameInput = screen.getByPlaceholderText(/e\.g\. Ramesh Verma/i);
+    fireEvent.change(nameInput, { target: { value: 'Vikram Joshi' } });
+
+    const phoneInput = screen.getByPlaceholderText(/e\.g\. 9876500004/i);
+    fireEvent.change(phoneInput, { target: { value: '9876500099' } });
+
+    // Open the Multi-Skill dropdown by clicking the trigger
+    const skillDropdown = screen.getByRole('button', { name: /Select specializations/i });
+    fireEvent.click(skillDropdown);
+
+    // Click the "Plumbing & Civil" option in the dropdown list
+    const listbox = screen.getByRole('listbox');
+    const plumbingOption = within(listbox).getByText('Plumbing & Civil');
+    fireEvent.click(plumbingOption);
+
+    // Both "Electrical & AC" and "Plumbing & Civil" should be selected
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
+
+    // Submit form
+    const submitBtn = screen.getByRole('button', { name: /Save & Onboard Specialist/i });
+    fireEvent.click(submitBtn);
+
+    // Verify callback was called with multiple skills
+    expect(currentList[0].name).toBe('Vikram Joshi');
+    expect(currentList[0].skills).toEqual(['Electrical & AC', 'Plumbing & Civil']);
+    expect(currentList[0].skill).toBe('Electrical & AC, Plumbing & Civil');
+
+    // Rerender table
+    rerender(<Technicians technicians={currentList} setTechnicians={setTechnicians} />);
+
+    // In the table, both skill badges should appear
+    expect(screen.getAllByText('Electrical & AC').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Plumbing & Civil').length).toBeGreaterThan(0);
   });
 });

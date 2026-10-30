@@ -313,4 +313,114 @@ describe('Services Management Page & Hierarchy Flow', () => {
     fireEvent.click(photoBtns[0]);
     expect(screen.getByText(/Inspection Media: Issue & IN \/ OUT Verification/i)).toBeInTheDocument();
   });
+
+  test('filters requests apartment-wise and tower-wise with dynamic counts and reset functionality', () => {
+    const multiApartmentRequests = [
+      {
+        id: 'REQ-1001',
+        caseOrderId: 'CASE-2026-041',
+        caseTitle: 'Main Power Distribution & Socket Sparks',
+        workOrderId: 'WO-041-A',
+        workOrderTitle: 'Circuit breaker diagnosis & rewire',
+        category: 'Technicians',
+        service: 'Electrical Repair',
+        resident: 'Kavya Sharma',
+        apartment: 'Surya Enclave',
+        tower: 'Tower A',
+        flatNo: 'A-101',
+        technician: 'Suresh Babu',
+        priority: 'Urgent',
+        status: 'In Progress',
+      },
+      {
+        id: 'REQ-1002',
+        caseOrderId: 'CASE-2026-042',
+        caseTitle: 'Balcony Pipeline Drainage Clog',
+        workOrderId: 'WO-042-A',
+        workOrderTitle: 'Hydro-jet clearing and trap replace',
+        category: 'Technicians',
+        service: 'Plumbing',
+        resident: 'Priya Sharma',
+        apartment: 'Golden Orbit',
+        tower: 'Tower C',
+        flatNo: 'C-305',
+        technician: 'Mahesh Reddy',
+        priority: 'Normal',
+        status: 'Assigned',
+      },
+      {
+        id: 'REQ-1003',
+        caseOrderId: 'CASE-2026-039',
+        caseTitle: 'Tower B Outdoor Inverter AC Service',
+        workOrderId: 'WO-039-B',
+        workOrderTitle: 'Compressor check and refrigerant recharge',
+        category: 'Technicians',
+        service: 'AC Maintenance',
+        resident: 'Arjun Reddy',
+        apartment: 'Sunrise Heights',
+        tower: 'Tower B',
+        flatNo: 'B-202',
+        technician: 'Suresh Babu',
+        priority: 'Normal',
+        status: 'Resolved',
+      },
+      {
+        id: 'REQ-1005',
+        caseOrderId: 'CASE-2026-045',
+        caseTitle: 'Tower B Ground Booster Pump Pressure Drop',
+        workOrderId: 'WO-045-A',
+        workOrderTitle: 'Impeller assembly & pressure sensor test',
+        category: 'Technicians',
+        service: 'Plumbing',
+        resident: 'Ravi Kumar',
+        apartment: 'Surya Enclave',
+        tower: 'Tower B',
+        flatNo: 'B-102',
+        technician: 'Unassigned',
+        priority: 'Urgent',
+        status: 'Pending',
+      },
+    ];
+
+    render(<Services requests={multiApartmentRequests} />);
+
+    // 1. Initial State: All 4 requests visible
+    expect(screen.getByText('REQ-1001')).toBeInTheDocument();
+    expect(screen.getByText('REQ-1002')).toBeInTheDocument();
+    expect(screen.getByText('REQ-1003')).toBeInTheDocument();
+    expect(screen.getByText('REQ-1005')).toBeInTheDocument();
+    expect(screen.getByText('4 of 4 cases')).toBeInTheDocument();
+
+    // 2. Filter Apartment to "Surya Enclave"
+    const aptSelect = screen.getByLabelText(/Filter by Apartment/i);
+    fireEvent.change(aptSelect, { target: { value: 'Surya Enclave' } });
+
+    // REQ-1001 & REQ-1005 should be visible, REQ-1002 and REQ-1003 should NOT
+    expect(screen.getByText('REQ-1001')).toBeInTheDocument();
+    expect(screen.getByText('REQ-1005')).toBeInTheDocument();
+    expect(screen.queryByText('REQ-1002')).not.toBeInTheDocument();
+    expect(screen.queryByText('REQ-1003')).not.toBeInTheDocument();
+    expect(screen.getByText('2 of 4 cases')).toBeInTheDocument();
+
+    // 3. Further Filter Tower to "Tower B"
+    const towerSelect = screen.getByLabelText(/Filter by Tower/i);
+    fireEvent.change(towerSelect, { target: { value: 'Tower B' } });
+
+    // Only REQ-1005 should be visible (Surya Enclave + Tower B)
+    expect(screen.getByText('REQ-1005')).toBeInTheDocument();
+    expect(screen.queryByText('REQ-1001')).not.toBeInTheDocument();
+    expect(screen.getByText('1 of 4 cases')).toBeInTheDocument();
+
+    // 4. Click Reset button to clear all filters
+    const resetBtn = screen.getByRole('button', { name: /Reset/i });
+    expect(resetBtn).toBeInTheDocument();
+    fireEvent.click(resetBtn);
+
+    // After reset, all 4 requests should be visible again
+    expect(screen.getByText('REQ-1001')).toBeInTheDocument();
+    expect(screen.getByText('REQ-1002')).toBeInTheDocument();
+    expect(screen.getByText('REQ-1003')).toBeInTheDocument();
+    expect(screen.getByText('REQ-1005')).toBeInTheDocument();
+    expect(screen.getByText('4 of 4 cases')).toBeInTheDocument();
+  });
 });

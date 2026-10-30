@@ -798,7 +798,9 @@ body {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
-  overflow-x: auto;
+  padding: 6px 4px 10px;
+  margin: -6px -4px 0;
+  overflow: visible;
 }
 
 .apartment-metric {
@@ -810,8 +812,14 @@ body {
   gap: 5px;
   padding: 11px 12px;
   border: 1px solid var(--metric-border);
+  border-top: 3px solid var(--metric-accent);
   border-radius: 12px;
   background: linear-gradient(145deg, #FFFFFF 0%, var(--metric-surface) 100%);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .apartment-metric-agencies {
@@ -884,9 +892,13 @@ body {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
+  padding: 6px 4px 10px;
+  margin: -6px -4px 0;
+  overflow: visible;
 }
 
 .apartment-metrics-lite .apartment-metric {
+  position: relative;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -895,12 +907,42 @@ body {
   padding: 10px 14px;
   border-radius: 10px;
   box-shadow: 0 1px 3px rgba(10, 30, 74, 0.05);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  border: 1px solid var(--metric-border);
+  border-top: 3px solid var(--metric-accent);
+  background: linear-gradient(145deg, #FFFFFF 0%, var(--metric-surface) 100%);
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  box-sizing: border-box;
+  width: 100%;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.2s ease !important;
 }
 
 .apartment-metrics-lite .apartment-metric:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(10, 30, 74, 0.08);
+  transform: translateY(-3px) !important;
+  border-color: var(--metric-accent) !important;
+  border-top: 3px solid var(--metric-accent) !important;
+  background: linear-gradient(145deg, #FFFFFF 0%, var(--metric-surface) 85%) !important;
+  box-shadow: 0 6px 18px rgba(10, 30, 74, 0.12) !important;
+}
+
+.apartment-metrics-lite .apartment-metric:hover .apartment-metric-icon {
+  transform: scale(1.08);
+}
+
+.apartment-metrics-lite .apartment-metric-icon {
+  transition: transform 0.2s ease;
+}
+
+.apartment-metrics-lite .apartment-metric:focus-visible {
+  outline: 2px solid var(--metric-accent);
+  outline-offset: 2px;
 }
 
 .apartment-metric-icon {
@@ -1917,6 +1959,7 @@ body {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x mandatory;
+    padding-top: 6px;
     padding-bottom: 8px;
     margin-bottom: 18px;
     scrollbar-width: thin;
@@ -2227,6 +2270,7 @@ body,
 [data-theme="dark"] .apartment-metric {
   background: linear-gradient(145deg, #0A1633 0%, #0E2046 100%) !important;
   border-color: rgba(59, 130, 246, 0.25) !important;
+  border-top-color: var(--metric-accent) !important;
 }
 
 [data-theme="dark"] .apartment-metric-value {

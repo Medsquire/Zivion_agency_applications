@@ -145,4 +145,51 @@ describe('DashboardHome Component - Issue & IN/OUT Image Verification', () => {
     expect(media.inImage).toBeDefined();
     expect(media.inNotes).toBeDefined();
   });
+
+  test('clicking apartment overview cards navigates to their respective pages', () => {
+    const handleNavigate = jest.fn();
+    render(
+      <DashboardHome
+        requests={mockRequests}
+        technicians={[
+          { id: 'TECH-001', name: 'Suresh Babu', status: 'Available' },
+          { id: 'TECH-002', name: 'Mahesh Reddy', status: 'On Leave' },
+        ]}
+        payments={[]}
+        apartments={['Surya Enclave']}
+        agencyAssignments={{ 'Surya Enclave': ['Apex Facility Services'] }}
+        onNavigate={handleNavigate}
+      />
+    );
+
+    // 1. Active Techs -> Technicians
+    const activeTechsBtn = screen.getByRole('button', { name: /Apartment Active Techs:/i });
+    fireEvent.click(activeTechsBtn);
+    expect(handleNavigate).toHaveBeenCalledWith('Technicians');
+
+    // 2. Inactive -> Technicians
+    const inactiveTechsBtn = screen.getByRole('button', { name: /Apartment Inactive Techs:/i });
+    fireEvent.click(inactiveTechsBtn);
+    expect(handleNavigate).toHaveBeenCalledWith('Technicians');
+
+    // 3. Pending -> Services
+    const pendingBtn = screen.getByRole('button', { name: /Apartment Pending Requests:/i });
+    fireEvent.click(pendingBtn);
+    expect(handleNavigate).toHaveBeenCalledWith('Services');
+
+    // 4. In Progress -> Services
+    const inProgressBtn = screen.getByRole('button', { name: /Apartment In Progress Requests:/i });
+    fireEvent.click(inProgressBtn);
+    expect(handleNavigate).toHaveBeenCalledWith('Services');
+
+    // 5. Depts -> Communities
+    const deptsBtn = screen.getByRole('button', { name: /Apartment Departments: 7/i });
+    fireEvent.click(deptsBtn);
+    expect(handleNavigate).toHaveBeenCalledWith('Communities');
+
+    // 6. Agencies -> Communities
+    const agenciesBtn = screen.getByRole('button', { name: /Apartment Agencies:/i });
+    fireEvent.click(agenciesBtn);
+    expect(handleNavigate).toHaveBeenCalledWith('Communities');
+  });
 });
